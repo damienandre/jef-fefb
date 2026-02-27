@@ -1,0 +1,54 @@
+# Dependencies
+/vendor/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE / Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+nbproject/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# PHP
+*.phar
+*.cache
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+
+# Code coverage
+/coverage/
+clover.xml
+coverage.xml
+
+# Logs
+*.log
+
+# Build / dist
+/build/
+/dist/
+
+# Runtime data
+/tmp/
+/cache/
+/var/cache/
+/var/log/
+/var/sessions/
+
+# Docker (if used)
+docker-compose.override.yml
