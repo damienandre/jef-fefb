@@ -44,31 +44,31 @@ final class ImportWorkflowTest extends TestCase
 
         $result = ImportService::import(self::$db, 2026, 1, $trfContent);
 
-        $this->assertSame(10, $result['player_count']);
-        $this->assertSame('Tournoi JEF Test', $result['tournament_name']);
+        $this->assertSame(123, $result['player_count']);
+        $this->assertSame('JEF 2026 Etape 1 Rounds 1 - 9', $result['tournament_name']);
 
         // Verify season created
         $season = self::$db->query("SELECT * FROM jef_seasons WHERE year = 2026")->fetch();
         $this->assertNotFalse($season);
 
         // Verify tournament created
-        $tournament = self::$db->query("SELECT * FROM jef_tournaments WHERE name = 'Tournoi JEF Test'")->fetch();
+        $tournament = self::$db->query("SELECT * FROM jef_tournaments WHERE name = 'JEF 2026 Etape 1 Rounds 1 - 9'")->fetch();
         $this->assertNotFalse($tournament);
-        $this->assertSame(10, (int) $tournament['player_count']);
+        $this->assertSame(123, (int) $tournament['player_count']);
 
         // Verify players created
         $playerCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn();
-        $this->assertSame(10, $playerCount);
+        $this->assertSame(123, $playerCount);
 
         // Verify rankings calculated
         $rankingCount = (int) self::$db->query(
             "SELECT COUNT(*) FROM jef_circuit_rankings WHERE ranking_type = 'general'"
         )->fetchColumn();
-        $this->assertSame(10, $rankingCount);
+        $this->assertSame(123, $rankingCount);
 
         // Verify rank 1 player has highest circuit points
         $rank1 = self::$db->query(
-            "SELECT total_points FROM jef_circuit_rankings WHERE ranking_type = 'general' AND rank = 1"
+            "SELECT total_points FROM jef_circuit_rankings WHERE ranking_type = 'general' AND `rank` = 1"
         )->fetchColumn();
         $this->assertSame(25.0, (float) $rank1);
     }
@@ -83,11 +83,11 @@ final class ImportWorkflowTest extends TestCase
         // Reimport same sort_order
         $result = ImportService::import(self::$db, 2026, 1, $trfContent);
 
-        $this->assertSame(10, $result['player_count']);
+        $this->assertSame(123, $result['player_count']);
 
         // Should still have 10 players (not 20)
         $playerCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn();
-        $this->assertSame(10, $playerCount);
+        $this->assertSame(123, $playerCount);
 
         // Should still have 1 tournament
         $tourCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_tournaments")->fetchColumn();

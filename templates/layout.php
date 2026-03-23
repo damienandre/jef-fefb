@@ -1,12 +1,3 @@
-<?php
-$config = require __DIR__ . '/../config.php';
-$baseUrl = rtrim($config['base_url'], '/');
-
-$db = \Jef\Database::get();
-$logoStmt = $db->prepare("SELECT `value` FROM jef_settings WHERE `key` = ?");
-$logoStmt->execute(['logo_path']);
-$logoPath = $logoStmt->fetchColumn();
-?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -18,7 +9,7 @@ $logoPath = $logoStmt->fetchColumn();
 <body>
     <header>
         <div class="header-content">
-            <?php if ($logoPath): ?>
+            <?php if (!empty($logoPath)): ?>
                 <img src="<?= $baseUrl ?>/uploads/<?= htmlspecialchars($logoPath) ?>" alt="FEFB" class="logo">
             <?php else: ?>
                 <span class="logo-text">FEFB</span>

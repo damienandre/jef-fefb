@@ -8,11 +8,16 @@ use PDO;
 
 final class Auth
 {
-    public static function requireAuth(): void
+    private static function ensureSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+    }
+
+    public static function requireAuth(): void
+    {
+        self::ensureSession();
         if (empty($_SESSION['authenticated'])) {
             header('Location: /admin/login');
             exit;
@@ -26,25 +31,20 @@ final class Auth
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
+            self::ensureSession();
             session_regenerate_id(true);
             $_SESSION['authenticated'] = true;
             $_SESSION['user_id'] = $user['id'];
             return true;
         }
 
-        // Basic brute-force mitigation
         sleep(1);
         return false;
     }
 
     public static function logout(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        self::ensureSession();
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
@@ -63,9 +63,7 @@ final class Auth
 
     public static function generateCsrfToken(): string
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        self::ensureSession();
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -74,9 +72,7 @@ final class Auth
 
     public static function validateCsrfToken(string $token): bool
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        self::ensureSession();
         return !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }
 }

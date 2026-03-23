@@ -16,7 +16,8 @@ if ($tournamentId <= 0) {
 
 // Get tournament
 $stmt = $db->prepare(
-    "SELECT t.*, s.year as season_year
+    "SELECT t.id, t.season_id, t.name, t.location, t.date_start, t.date_end,
+            t.round_count, t.player_count, t.sort_order, s.year as season_year
      FROM jef_tournaments t
      JOIN jef_seasons s ON s.id = t.season_id
      WHERE t.id = ?"
@@ -50,7 +51,7 @@ foreach ($players as &$player) {
 unset($player);
 
 View::render('tournament.html.php', [
-    'pageTitle' => htmlspecialchars($tournament['name']) . ' - Circuit JEF',
+    'pageTitle' => $tournament['name'] . ' - Circuit JEF',
     'tournament' => $tournament,
     'players' => $players,
     'playerNamesByRank' => $playerNamesByRank,

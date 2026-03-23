@@ -11,6 +11,11 @@ $db = Database::get();
 $selectedYear = isset($_GET['annee']) ? (int) $_GET['annee'] : (int) date('Y');
 $selectedCategory = $_GET['categorie'] ?? 'general';
 
+$validCategories = array_merge(['general'], AgeCategory::all());
+if (!in_array($selectedCategory, $validCategories, true)) {
+    $selectedCategory = 'general';
+}
+
 // Get available years
 $yearsStmt = $db->query("SELECT year FROM jef_seasons ORDER BY year DESC");
 $availableYears = $yearsStmt->fetchAll(\PDO::FETCH_COLUMN);

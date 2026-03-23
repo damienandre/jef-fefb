@@ -6,7 +6,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = rtrim($path, '/') ?: '/';
-$method = $_SERVER['REQUEST_METHOD'];
 
 match ($path) {
     '/'               => require __DIR__ . '/../pages/rankings.php',

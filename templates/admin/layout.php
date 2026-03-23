@@ -1,7 +1,3 @@
-<?php
-$config = require __DIR__ . '/../../config.php';
-$baseUrl = rtrim($config['base_url'], '/');
-?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>

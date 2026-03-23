@@ -6,10 +6,6 @@ use Jef\Auth;
 use Jef\Database;
 use Jef\View;
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -33,4 +29,4 @@ View::render('admin/login.html.php', [
     'pageTitle' => 'Connexion - Administration JEF',
     'error' => $error,
     'csrfToken' => $csrfToken,
-], 'admin/../layout.php');
+], 'layout.php');

@@ -84,17 +84,18 @@ final class ImportService
                 $tournamentId = (int) $db->lastInsertId();
             }
 
-            // Process players
+            $insertTpStmt = $db->prepare(
+                "INSERT INTO jef_tournament_players
+                 (tournament_id, player_id, starting_rank, final_rank, points, rounds_data)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
             foreach ($trfPlayers as $trfPlayer) {
                 $playerId = self::findOrCreatePlayer($db, $trfPlayer);
 
                 $roundsJson = json_encode($trfPlayer->rounds, JSON_UNESCAPED_UNICODE);
 
-                $db->prepare(
-                    "INSERT INTO jef_tournament_players
-                     (tournament_id, player_id, starting_rank, final_rank, points, rounds_data)
-                     VALUES (?, ?, ?, ?, ?, ?)"
-                )->execute([
+                $insertTpStmt->execute([
                     $tournamentId,
                     $playerId,
                     $trfPlayer->startingRank,
