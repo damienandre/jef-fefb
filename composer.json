@@ -1,0 +1,17 @@
+{
+    "name": "fefb/jef",
+    "description": "JEF youth chess circuit rankings",
+    "type": "project",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Jef\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.0"
+    }
+}
