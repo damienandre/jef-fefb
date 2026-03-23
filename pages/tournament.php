@@ -46,6 +46,7 @@ $players = $playersStmt->fetchAll();
 $playerNamesByRank = [];
 foreach ($players as &$player) {
     $player['rounds'] = json_decode($player['rounds_data'], true) ?: [];
+    $player['rounds_by_num'] = array_column($player['rounds'], null, 'round');
     $playerNamesByRank[$player['starting_rank']] = $player['first_name'] . ' ' . $player['last_name'];
 }
 unset($player);

@@ -11,20 +11,17 @@ Auth::requireAuth();
 $db = Database::get();
 
 $seasons = $db->query(
-    "SELECT s.id, s.year, s.status,
-            (SELECT COUNT(*) FROM jef_tournaments t WHERE t.season_id = s.id) as tournament_count
-     FROM jef_seasons s
-     ORDER BY s.year DESC"
+    "SELECT id, year, status FROM jef_seasons ORDER BY year DESC"
+)->fetchAll();
+
+$allTournaments = $db->query(
+    "SELECT id, season_id, name, date_start, player_count, sort_order
+     FROM jef_tournaments ORDER BY sort_order"
 )->fetchAll();
 
 $tournaments = [];
-foreach ($seasons as $season) {
-    $stmt = $db->prepare(
-        "SELECT id, name, date_start, player_count, sort_order
-         FROM jef_tournaments WHERE season_id = ? ORDER BY sort_order"
-    );
-    $stmt->execute([$season['id']]);
-    $tournaments[$season['id']] = $stmt->fetchAll();
+foreach ($allTournaments as $t) {
+    $tournaments[$t['season_id']][] = $t;
 }
 
 View::render('admin/dashboard.html.php', [

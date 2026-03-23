@@ -19,6 +19,26 @@ final class RankingCalculator
 
     public static function recalculate(PDO $db, int $seasonId): void
     {
+        $wasInTransaction = $db->inTransaction();
+        if (!$wasInTransaction) {
+            $db->beginTransaction();
+        }
+
+        try {
+            self::doRecalculate($db, $seasonId);
+            if (!$wasInTransaction) {
+                $db->commit();
+            }
+        } catch (\Throwable $e) {
+            if (!$wasInTransaction) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    private static function doRecalculate(PDO $db, int $seasonId): void
+    {
         $db->prepare("DELETE FROM jef_circuit_results WHERE season_id = ?")->execute([$seasonId]);
         $db->prepare("DELETE FROM jef_circuit_rankings WHERE season_id = ?")->execute([$seasonId]);
 
@@ -55,13 +75,11 @@ final class RankingCalculator
             $tpStmt->execute([$tournamentId]);
             $tournamentPlayers = $tpStmt->fetchAll();
 
-            // Cache age categories per player to avoid recomputing per ranking type
             $playerCategories = [];
             foreach ($tournamentPlayers as $tp) {
-                $playerCategories[$tp['player_id']] = AgeCategory::determine(
-                    new \DateTimeImmutable($tp['birth_date']),
-                    $seasonYear
-                );
+                $playerCategories[$tp['player_id']] = $tp['birth_date'] !== null
+                    ? AgeCategory::determine(new \DateTimeImmutable($tp['birth_date']), $seasonYear)
+                    : null;
             }
 
             foreach ($rankingTypes as $type) {
@@ -78,7 +96,7 @@ final class RankingCalculator
 
                 $rank = 1;
                 foreach ($filteredPlayers as $i => $tp) {
-                    if ($i > 0 && (float) $tp['points'] === (float) $filteredPlayers[$i - 1]['points']) {
+                    if ($i > 0 && $tp['points'] === $filteredPlayers[$i - 1]['points']) {
                         // Ex-aequo: keep same rank
                     } else {
                         $rank = $i + 1;
@@ -117,7 +135,7 @@ final class RankingCalculator
 
             $rank = 1;
             foreach ($totals as $i => $row) {
-                if ($i > 0 && (float) $row['total'] === (float) $totals[$i - 1]['total']) {
+                if ($i > 0 && $row['total'] === $totals[$i - 1]['total']) {
                     // Ex-aequo: keep same rank
                 } else {
                     $rank = $i + 1;

@@ -6,9 +6,9 @@
         <?php if ($tournament['location']): ?>
             <?= htmlspecialchars($tournament['location']) ?> &mdash;
         <?php endif; ?>
-        <?= $tournament['date_start'] ?>
+        <?= htmlspecialchars($tournament['date_start']) ?>
         <?php if ($tournament['date_end'] && $tournament['date_end'] !== $tournament['date_start']): ?>
-            au <?= $tournament['date_end'] ?>
+            au <?= htmlspecialchars($tournament['date_end']) ?>
         <?php endif; ?>
         &mdash; <?= $tournament['player_count'] ?> joueurs &mdash; <?= $tournament['round_count'] ?> rondes
     </p>
@@ -36,15 +36,7 @@
                         <td class="name"><?= htmlspecialchars($player['first_name'] . ' ' . $player['last_name']) ?></td>
                         <td class="total"><?= number_format((float) $player['points'], 1) ?></td>
                         <?php for ($r = 1; $r <= (int) $tournament['round_count']; $r++): ?>
-                            <?php
-                            $round = null;
-                            foreach ($player['rounds'] as $rd) {
-                                if (($rd['round'] ?? 0) === $r) {
-                                    $round = $rd;
-                                    break;
-                                }
-                            }
-                            ?>
+                            <?php $round = $player['rounds_by_num'][$r] ?? null; ?>
                             <td>
                                 <?php if ($round && $round['result']): ?>
                                     <?php
@@ -74,7 +66,7 @@
                                         default => '',
                                     };
                                     ?>
-                                    <span class="<?= $resultClass ?>"><?= $resultSymbol ?></span>
+                                    <span class="<?= $resultClass ?>"><?= htmlspecialchars($resultSymbol) ?></span>
                                     <?php if ($colorIndicator): ?>
                                         <span class="color-<?= $round['color'] === 'w' ? 'white' : 'black' ?>">(<?= $colorIndicator ?>)</span>
                                     <?php endif; ?>

@@ -25,6 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($_FILES['trf_file']['size'] > $maxSize) {
+        $_SESSION['flash_error'] = 'Le fichier est trop volumineux (max 5 Mo).';
+        header('Location: /admin/import');
+        exit;
+    }
+
     $trfContent = file_get_contents($_FILES['trf_file']['tmp_name']);
 
     try {
@@ -40,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_error'] = 'Erreur de format TRF : ' . $e->getMessage();
         header('Location: /admin/import');
         exit;
-    } catch (\Throwable $e) {
-        $_SESSION['flash_error'] = 'Erreur lors de l\'import : ' . $e->getMessage();
+    } catch (\Throwable) {
+        $_SESSION['flash_error'] = 'Erreur interne lors de l\'import.';
         header('Location: /admin/import');
         exit;
     }

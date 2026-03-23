@@ -38,7 +38,7 @@ A youth chess player participating in the JEF circuit.
 | fide_id     | INT UNSIGNED     | UNIQUE, NULL               | FIDE ID (optional)       |
 | last_name   | VARCHAR(100)     | NOT NULL                   | Family name              |
 | first_name  | VARCHAR(100)     | NOT NULL                   | Given name               |
-| birth_date  | DATE             | NOT NULL                   | Date of birth            |
+| birth_date  | DATE             | NULL                       | Date of birth (may be missing in TRF) |
 | created_at  | DATETIME         | NOT NULL, DEFAULT NOW()    | Record creation time     |
 | updated_at  | DATETIME         | NOT NULL, DEFAULT NOW() ON UPDATE NOW() | Last update |
 

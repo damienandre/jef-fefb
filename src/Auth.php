@@ -11,6 +11,11 @@ final class Auth
     private static function ensureSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            session_set_cookie_params([
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
             session_start();
         }
     }

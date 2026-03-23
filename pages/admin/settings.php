@@ -18,12 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!empty($_FILES['logo']['tmp_name']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-        $allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
+        $allowedTypes = ['image/png', 'image/jpeg'];
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
 
         if (!in_array($mimeType, $allowedTypes, true)) {
-            $_SESSION['flash_error'] = 'Format de fichier non accepte. Utilisez PNG, JPG ou SVG.';
+            $_SESSION['flash_error'] = 'Format de fichier non accepte. Utilisez PNG ou JPG.';
             header('Location: /admin/settings');
             exit;
         }
@@ -38,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ext = match ($mimeType) {
             'image/png' => 'png',
             'image/jpeg' => 'jpg',
-            'image/svg+xml' => 'svg',
         };
         $filename = 'logo.' . $ext;
         $uploadDir = __DIR__ . '/../../public/uploads/';

@@ -13,8 +13,8 @@
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
 
     <div class="form-group">
-        <label for="logo">Nouveau logo (PNG, JPG ou SVG, max 2 Mo)</label>
-        <input type="file" name="logo" id="logo" accept=".png,.jpg,.jpeg,.svg" required>
+        <label for="logo">Nouveau logo (PNG ou JPG, max 2 Mo)</label>
+        <input type="file" name="logo" id="logo" accept=".png,.jpg,.jpeg" required>
     </div>
 
     <button type="submit" class="btn">Enregistrer</button>

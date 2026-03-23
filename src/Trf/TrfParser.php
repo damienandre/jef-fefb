@@ -56,11 +56,16 @@ final class TrfParser
 
         $roundCount = count($roundDates);
 
+        $dateStart = $this->parseDate($headers['042'] ?? null);
+        if ($dateStart === null) {
+            throw new \InvalidArgumentException('Missing or invalid tournament start date (042 header)');
+        }
+
         $tournament = new TrfTournament(
             name: $headers['012'],
             city: $headers['022'] ?? null,
             federation: !empty($headers['032']) ? $headers['032'] : null,
-            dateStart: $this->parseDate($headers['042'] ?? null),
+            dateStart: $dateStart,
             dateEnd: $this->parseDate($headers['052'] ?? null),
             playerCount: (int) ($headers['062'] ?? count($playerLines)),
             roundCount: $roundCount,

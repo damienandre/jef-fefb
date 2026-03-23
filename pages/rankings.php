@@ -77,10 +77,9 @@ if ($seasonId) {
 
         // Attach to rankings
         foreach ($rankings as &$row) {
-            $row['category'] = AgeCategory::determine(
-                new \DateTimeImmutable($row['birth_date']),
-                $selectedYear
-            ) ?? '—';
+            $row['category'] = $row['birth_date'] !== null
+                ? (AgeCategory::determine(new \DateTimeImmutable($row['birth_date']), $selectedYear) ?? '—')
+                : '—';
             $row['tournament_results'] = [];
             foreach ($tournaments as $t) {
                 $row['tournament_results'][$t['id']] = $resultsByPlayer[$row['player_id']][$t['id']] ?? null;

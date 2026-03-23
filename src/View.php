@@ -18,7 +18,7 @@ final class View
             $data['logoPath'] = $stmt->fetchColumn() ?: null;
         }
 
-        extract($data);
+        extract($data, EXTR_SKIP);
 
         if ($layout !== null) {
             ob_start();
