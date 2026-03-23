@@ -201,7 +201,7 @@ s'affiche avec les resultats par ronde.
   profil.
 - Que se passe-t-il si un fichier TRF contient un joueur inconnu ?
   Le systeme cree automatiquement le joueur a partir des donnees du
-  fichier TRF (nom, date de naissance, club).
+  fichier TRF (nom, date de naissance).
 - Que se passe-t-il si un fichier TRF est reimporte pour une manche
   deja existante ? Les donnees de cette manche sont ecrasees et les
   classements du circuit sont recalcules.
@@ -267,8 +267,8 @@ s'affiche avec les resultats par ronde.
 
 - **Joueur (Player)**: Un jeune participant au circuit JEF.
   Attributs cles : nom, prenom, date de naissance, categorie d'age,
-  club, FIDE ID (optionnel). Identifiant unique : FIDE ID si
-  disponible, sinon combinaison nom + date de naissance.
+  FIDE ID (optionnel). Identifiant unique : FIDE ID si disponible,
+  sinon combinaison nom + date de naissance.
 - **Manche (Round)**: Un tournoi individuel faisant partie du
   circuit JEF pour une annee donnee. Attributs cles : nom/numero,
   date, lieu, annee du circuit.

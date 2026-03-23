@@ -5,6 +5,7 @@
 .env
 .env.local
 .env.*.local
+config.php
 
 # IDE / Editors
 .idea/

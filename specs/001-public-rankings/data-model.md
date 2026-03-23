@@ -39,7 +39,6 @@ A youth chess player participating in the JEF circuit.
 | last_name   | VARCHAR(100)     | NOT NULL                   | Family name              |
 | first_name  | VARCHAR(100)     | NOT NULL                   | Given name               |
 | birth_date  | DATE             | NOT NULL                   | Date of birth            |
-| club        | VARCHAR(100)     | NULL                       | Chess club name          |
 | created_at  | DATETIME         | NOT NULL, DEFAULT NOW()    | Record creation time     |
 | updated_at  | DATETIME         | NOT NULL, DEFAULT NOW() ON UPDATE NOW() | Last update |
 
