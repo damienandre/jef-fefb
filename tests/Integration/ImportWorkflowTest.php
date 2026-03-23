@@ -70,7 +70,7 @@ final class ImportWorkflowTest extends TestCase
         $rank1 = self::$db->query(
             "SELECT total_points FROM jef_circuit_rankings WHERE ranking_type = 'general' AND `rank` = 1"
         )->fetchColumn();
-        $this->assertSame(25.0, (float) $rank1);
+        $this->assertSame(150.0, (float) $rank1);
     }
 
     public function testReimportReplacesData(): void

@@ -9,13 +9,12 @@ use PDO;
 final class RankingCalculator
 {
     /**
-     * Circuit points assigned based on tournament rank:
-     * 1st = 25, 2nd = 20, 3rd = 16, 4th = 13, 5th = 11,
-     * 6th = 9, 7th = 7, 8th = 5, 9th = 3, 10th+ = 1
-     *
-     * TODO: Make scoring rules configurable per FEFB requirements.
+     * FEFB Article 10: circuit points based on tournament score position.
+     * Players with the same score share the same position and points.
+     * 8th position and beyond all receive 10 points.
      */
-    private const POINTS_TABLE = [25, 20, 16, 13, 11, 9, 7, 5, 3, 1];
+    private const POINTS_TABLE = [150, 120, 100, 80, 60, 40, 20];
+    private const POINTS_DEFAULT = 10;
 
     public static function recalculate(PDO $db, int $seasonId): void
     {
@@ -70,7 +69,7 @@ final class RankingCalculator
                  FROM jef_tournament_players tp
                  JOIN jef_players p ON p.id = tp.player_id
                  WHERE tp.tournament_id = ?
-                 ORDER BY tp.final_rank ASC"
+                 ORDER BY tp.points DESC"
             );
             $tpStmt->execute([$tournamentId]);
             $tournamentPlayers = $tpStmt->fetchAll();
@@ -102,7 +101,7 @@ final class RankingCalculator
                         $rank = $i + 1;
                     }
 
-                    $circuitPoints = self::POINTS_TABLE[$rank - 1] ?? self::POINTS_TABLE[array_key_last(self::POINTS_TABLE)];
+                    $circuitPoints = self::POINTS_TABLE[$rank - 1] ?? self::POINTS_DEFAULT;
 
                     $insertResultStmt->execute([
                         $seasonId, $tournamentId, $tp['player_id'],
