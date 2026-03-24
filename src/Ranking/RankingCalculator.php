@@ -132,16 +132,18 @@ final class RankingCalculator
                 continue;
             }
 
-            $scoreGroup = 0;
+            $rank = 0;
             $prevTotal = null;
+            $position = 0;
             foreach ($totals as $row) {
+                $position++;
                 if ($row['total'] !== $prevTotal) {
-                    $scoreGroup++;
+                    $rank = $position;
                     $prevTotal = $row['total'];
                 }
 
                 $insertRankingStmt->execute([
-                    $seasonId, $row['player_id'], $type, $row['total'], $scoreGroup,
+                    $seasonId, $row['player_id'], $type, $row['total'], $rank,
                 ]);
             }
         }
