@@ -59,7 +59,7 @@ final class RankingCalculator
 
         $insertResultStmt = $db->prepare(
             "INSERT INTO jef_circuit_results
-             (season_id, tournament_id, player_id, ranking_type, tournament_rank, circuit_points)
+             (season_id, tournament_id, player_id, ranking_type, score_position, circuit_points)
              VALUES (?, ?, ?, ?, ?, ?)"
         );
 

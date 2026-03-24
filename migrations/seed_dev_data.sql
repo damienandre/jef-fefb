@@ -59,7 +59,7 @@ INSERT INTO jef_tournament_players (tournament_id, player_id, starting_rank, fin
 
 -- Circuit results (general) — FEFB Article 10 points by distinct score group
 -- T1 scores: P3=4.5, P1=4.0, P5=3.5, P6=3.5, P2=3.0, P7=3.0, P4=2.5, P8=2.0, P9=1.5, P10=1.0
-INSERT INTO jef_circuit_results (season_id, tournament_id, player_id, ranking_type, tournament_rank, circuit_points) VALUES
+INSERT INTO jef_circuit_results (season_id, tournament_id, player_id, ranking_type, score_position, circuit_points) VALUES
     (@season_id, @t1_id, 3, 'general', 1, 150.0),
     (@season_id, @t1_id, 1, 'general', 2, 120.0),
     (@season_id, @t1_id, 5, 'general', 3, 100.0),
