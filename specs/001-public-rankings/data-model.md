@@ -143,7 +143,7 @@ FEFB ranking rules.
 | tournament_id   | INT UNSIGNED     | FK → jef_tournaments.id, NOT NULL | Tournament reference        |
 | player_id       | INT UNSIGNED     | FK → jef_players.id, NOT NULL  | Player reference               |
 | ranking_type    | VARCHAR(20)      | NOT NULL                   | 'general' or category          |
-| tournament_rank | SMALLINT UNSIGNED| NOT NULL                   | Player's rank in this tournament (within context) |
+| score_position  | SMALLINT UNSIGNED| NOT NULL                   | Score group position (Nth distinct score in tournament) |
 | circuit_points  | DECIMAL(6,1)     | NOT NULL                   | Points earned for the circuit  |
 
 **Unique constraint**:

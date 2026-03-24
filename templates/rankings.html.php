@@ -64,7 +64,7 @@
                             <?php foreach ($tournaments as $t): ?>
                                 <?php $res = $row['tournament_results'][$t['id']] ?? null; ?>
                                 <?php if ($res): ?>
-                                    <td class="tour-rank"><?= $res['tournament_rank'] ?></td>
+                                    <td class="tour-rank"><?= $res['score_position'] ?></td>
                                     <td class="tour-points"><?= number_format((float) $res['circuit_points'], 1) ?></td>
                                 <?php else: ?>
                                     <td class="tour-rank">—</td>

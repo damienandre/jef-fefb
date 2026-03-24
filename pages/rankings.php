@@ -62,7 +62,7 @@ if ($seasonId) {
         $placeholders = implode(',', array_fill(0, count($playerIds), '?'));
 
         $resStmt = $db->prepare(
-            "SELECT player_id, tournament_id, tournament_rank, circuit_points
+            "SELECT player_id, tournament_id, score_position, circuit_points
              FROM jef_circuit_results
              WHERE season_id = ? AND ranking_type = ? AND player_id IN ({$placeholders})"
         );

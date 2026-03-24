@@ -9,13 +9,12 @@ use PDO;
 final class RankingCalculator
 {
     /**
-     * Circuit points assigned based on tournament rank:
-     * 1st = 25, 2nd = 20, 3rd = 16, 4th = 13, 5th = 11,
-     * 6th = 9, 7th = 7, 8th = 5, 9th = 3, 10th+ = 1
-     *
-     * TODO: Make scoring rules configurable per FEFB requirements.
+     * FEFB Article 10: circuit points based on tournament score position.
+     * Players with the same score share the same position and points.
+     * 8th position and beyond all receive 10 points.
      */
-    private const POINTS_TABLE = [25, 20, 16, 13, 11, 9, 7, 5, 3, 1];
+    private const POINTS_TABLE = [150, 120, 100, 80, 60, 40, 20];
+    private const POINTS_DEFAULT = 10;
 
     public static function recalculate(PDO $db, int $seasonId): void
     {
@@ -60,7 +59,7 @@ final class RankingCalculator
 
         $insertResultStmt = $db->prepare(
             "INSERT INTO jef_circuit_results
-             (season_id, tournament_id, player_id, ranking_type, tournament_rank, circuit_points)
+             (season_id, tournament_id, player_id, ranking_type, score_position, circuit_points)
              VALUES (?, ?, ?, ?, ?, ?)"
         );
 
@@ -70,7 +69,7 @@ final class RankingCalculator
                  FROM jef_tournament_players tp
                  JOIN jef_players p ON p.id = tp.player_id
                  WHERE tp.tournament_id = ?
-                 ORDER BY tp.final_rank ASC"
+                 ORDER BY tp.points DESC"
             );
             $tpStmt->execute([$tournamentId]);
             $tournamentPlayers = $tpStmt->fetchAll();
@@ -94,19 +93,19 @@ final class RankingCalculator
                     continue;
                 }
 
-                $rank = 1;
-                foreach ($filteredPlayers as $i => $tp) {
-                    if ($i > 0 && $tp['points'] === $filteredPlayers[$i - 1]['points']) {
-                        // Ex-aequo: keep same rank
-                    } else {
-                        $rank = $i + 1;
+                $scoreGroup = 0;
+                $prevPoints = null;
+                foreach ($filteredPlayers as $tp) {
+                    if ($tp['points'] !== $prevPoints) {
+                        $scoreGroup++;
+                        $prevPoints = $tp['points'];
                     }
 
-                    $circuitPoints = self::POINTS_TABLE[$rank - 1] ?? self::POINTS_TABLE[array_key_last(self::POINTS_TABLE)];
+                    $circuitPoints = self::POINTS_TABLE[$scoreGroup - 1] ?? self::POINTS_DEFAULT;
 
                     $insertResultStmt->execute([
                         $seasonId, $tournamentId, $tp['player_id'],
-                        $type, $rank, $circuitPoints,
+                        $type, $scoreGroup, $circuitPoints,
                     ]);
                 }
             }
@@ -133,12 +132,14 @@ final class RankingCalculator
                 continue;
             }
 
-            $rank = 1;
-            foreach ($totals as $i => $row) {
-                if ($i > 0 && $row['total'] === $totals[$i - 1]['total']) {
-                    // Ex-aequo: keep same rank
-                } else {
-                    $rank = $i + 1;
+            $rank = 0;
+            $prevTotal = null;
+            $position = 0;
+            foreach ($totals as $row) {
+                $position++;
+                if ($row['total'] !== $prevTotal) {
+                    $rank = $position;
+                    $prevTotal = $row['total'];
                 }
 
                 $insertRankingStmt->execute([
