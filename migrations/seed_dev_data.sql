@@ -57,38 +57,40 @@ INSERT INTO jef_tournament_players (tournament_id, player_id, starting_rank, fin
     (@t2_id, 9, 9, 10, 1.0, '[]'),
     (@t2_id, 10, 10, 9, 1.5, '[]');
 
--- Circuit results (general) — FEFB Article 10 points based on tournament score position
+-- Circuit results (general) — FEFB Article 10 points by distinct score group
+-- T1 scores: P3=4.5, P1=4.0, P5=3.5, P6=3.5, P2=3.0, P7=3.0, P4=2.5, P8=2.0, P9=1.5, P10=1.0
 INSERT INTO jef_circuit_results (season_id, tournament_id, player_id, ranking_type, tournament_rank, circuit_points) VALUES
     (@season_id, @t1_id, 3, 'general', 1, 150.0),
     (@season_id, @t1_id, 1, 'general', 2, 120.0),
     (@season_id, @t1_id, 5, 'general', 3, 100.0),
     (@season_id, @t1_id, 6, 'general', 3, 100.0),
-    (@season_id, @t1_id, 2, 'general', 5, 60.0),
-    (@season_id, @t1_id, 7, 'general', 5, 60.0),
-    (@season_id, @t1_id, 4, 'general', 7, 20.0),
-    (@season_id, @t1_id, 8, 'general', 8, 10.0),
-    (@season_id, @t1_id, 9, 'general', 9, 10.0),
-    (@season_id, @t1_id, 10, 'general', 10, 10.0),
+    (@season_id, @t1_id, 2, 'general', 4, 80.0),
+    (@season_id, @t1_id, 7, 'general', 4, 80.0),
+    (@season_id, @t1_id, 4, 'general', 5, 60.0),
+    (@season_id, @t1_id, 8, 'general', 6, 40.0),
+    (@season_id, @t1_id, 9, 'general', 7, 20.0),
+    (@season_id, @t1_id, 10, 'general', 8, 10.0),
+-- T2 scores: P1=4.5, P5=4.0, P2=3.5, P3=3.0, P6=3.0, P4=2.5, P8=2.5, P7=2.0, P10=1.5, P9=1.0
     (@season_id, @t2_id, 1, 'general', 1, 150.0),
     (@season_id, @t2_id, 5, 'general', 2, 120.0),
     (@season_id, @t2_id, 2, 'general', 3, 100.0),
-    (@season_id, @t2_id, 3, 'general', 3, 100.0),
-    (@season_id, @t2_id, 6, 'general', 5, 60.0),
-    (@season_id, @t2_id, 4, 'general', 6, 40.0),
-    (@season_id, @t2_id, 8, 'general', 7, 20.0),
-    (@season_id, @t2_id, 7, 'general', 8, 10.0),
-    (@season_id, @t2_id, 10, 'general', 9, 10.0),
-    (@season_id, @t2_id, 9, 'general', 10, 10.0);
+    (@season_id, @t2_id, 3, 'general', 4, 80.0),
+    (@season_id, @t2_id, 6, 'general', 4, 80.0),
+    (@season_id, @t2_id, 4, 'general', 5, 60.0),
+    (@season_id, @t2_id, 8, 'general', 5, 60.0),
+    (@season_id, @t2_id, 7, 'general', 6, 40.0),
+    (@season_id, @t2_id, 10, 'general', 7, 20.0),
+    (@season_id, @t2_id, 9, 'general', 8, 10.0);
 
 -- Circuit rankings (general) — sum of circuit_points across tournaments
 INSERT INTO jef_circuit_rankings (season_id, player_id, ranking_type, total_points, `rank`) VALUES
     (@season_id, 1, 'general', 270.0, 1),
-    (@season_id, 3, 'general', 250.0, 2),
+    (@season_id, 3, 'general', 230.0, 2),
     (@season_id, 5, 'general', 220.0, 3),
-    (@season_id, 2, 'general', 160.0, 4),
-    (@season_id, 6, 'general', 160.0, 4),
-    (@season_id, 7, 'general', 70.0, 6),
-    (@season_id, 4, 'general', 60.0, 7),
-    (@season_id, 8, 'general', 30.0, 8),
-    (@season_id, 10, 'general', 20.0, 9),
-    (@season_id, 9, 'general', 20.0, 9);
+    (@season_id, 2, 'general', 180.0, 4),
+    (@season_id, 6, 'general', 180.0, 4),
+    (@season_id, 4, 'general', 120.0, 6),
+    (@season_id, 7, 'general', 120.0, 6),
+    (@season_id, 8, 'general', 100.0, 8),
+    (@season_id, 10, 'general', 30.0, 9),
+    (@season_id, 9, 'general', 30.0, 9);

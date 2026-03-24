@@ -93,19 +93,19 @@ final class RankingCalculator
                     continue;
                 }
 
-                $rank = 1;
-                foreach ($filteredPlayers as $i => $tp) {
-                    if ($i > 0 && $tp['points'] === $filteredPlayers[$i - 1]['points']) {
-                        // Ex-aequo: keep same rank
-                    } else {
-                        $rank = $i + 1;
+                $scoreGroup = 0;
+                $prevPoints = null;
+                foreach ($filteredPlayers as $tp) {
+                    if ($tp['points'] !== $prevPoints) {
+                        $scoreGroup++;
+                        $prevPoints = $tp['points'];
                     }
 
-                    $circuitPoints = self::POINTS_TABLE[$rank - 1] ?? self::POINTS_DEFAULT;
+                    $circuitPoints = self::POINTS_TABLE[$scoreGroup - 1] ?? self::POINTS_DEFAULT;
 
                     $insertResultStmt->execute([
                         $seasonId, $tournamentId, $tp['player_id'],
-                        $type, $rank, $circuitPoints,
+                        $type, $scoreGroup, $circuitPoints,
                     ]);
                 }
             }
@@ -132,16 +132,16 @@ final class RankingCalculator
                 continue;
             }
 
-            $rank = 1;
-            foreach ($totals as $i => $row) {
-                if ($i > 0 && $row['total'] === $totals[$i - 1]['total']) {
-                    // Ex-aequo: keep same rank
-                } else {
-                    $rank = $i + 1;
+            $scoreGroup = 0;
+            $prevTotal = null;
+            foreach ($totals as $row) {
+                if ($row['total'] !== $prevTotal) {
+                    $scoreGroup++;
+                    $prevTotal = $row['total'];
                 }
 
                 $insertRankingStmt->execute([
-                    $seasonId, $row['player_id'], $type, $row['total'], $rank,
+                    $seasonId, $row['player_id'], $type, $row['total'], $scoreGroup,
                 ]);
             }
         }

@@ -62,7 +62,6 @@ final class RankingCalculatorTest extends TestCase
 
         $this->assertNotEmpty($rankings);
         $this->assertSame(1, (int) $rankings[0]['rank']);
-        // First player has rank 1 in tournament (25 pts)
         $this->assertSame(150.0, (float) $rankings[0]['total_points']);
     }
 
