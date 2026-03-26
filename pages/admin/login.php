@@ -10,7 +10,7 @@ $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $error = 'Session invalide. Veuillez reessayer.';
+        $error = 'Session invalide. Veuillez réessayer.';
     } else {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';

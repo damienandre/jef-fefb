@@ -12,7 +12,7 @@ $db = Database::get();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $_SESSION['flash_error'] = 'Session invalide. Veuillez reessayer.';
+        $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
         header('Location: /admin/settings');
         exit;
     }
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mimeType = $finfo->file($_FILES['logo']['tmp_name']);
 
         if (!in_array($mimeType, $allowedTypes, true)) {
-            $_SESSION['flash_error'] = 'Format de fichier non accepte. Utilisez PNG ou JPG.';
+            $_SESSION['flash_error'] = 'Format de fichier non accepté. Utilisez PNG ou JPG.';
             header('Location: /admin/settings');
             exit;
         }
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"
             );
             $stmt->execute([$filename]);
-            $_SESSION['flash_success'] = 'Logo mis a jour avec succes.';
+            $_SESSION['flash_success'] = 'Logo mis à jour avec succès.';
         } else {
             $_SESSION['flash_error'] = 'Erreur lors de l\'enregistrement du fichier.';
         }
@@ -66,7 +66,7 @@ $currentLogo = $logoStmt->fetchColumn();
 $csrfToken = Auth::generateCsrfToken();
 
 View::render('admin/settings.html.php', [
-    'pageTitle' => 'Parametres - Administration JEF',
+    'pageTitle' => 'Paramètres - Administration JEF',
     'csrfToken' => $csrfToken,
     'currentLogo' => $currentLogo,
 ], 'admin/layout.php');

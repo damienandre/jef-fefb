@@ -1,7 +1,7 @@
 <div class="stages-page">
     <div class="filters">
         <form method="GET" action="/etapes">
-            <label for="annee">Annee :</label>
+            <label for="annee">Année :</label>
             <select name="annee" id="annee" onchange="this.form.submit()">
                 <?php foreach ($availableYears as $year): ?>
                     <option value="<?= $year ?>" <?= $year === $selectedYear ? 'selected' : '' ?>>
@@ -13,20 +13,20 @@
     </div>
 
     <?php if (empty($stages)): ?>
-        <p class="empty-state">Aucune etape disponible pour cette annee.</p>
+        <p class="empty-state">Aucune étape disponible pour cette année.</p>
     <?php else: ?>
         <?php foreach ($stages as $stage): ?>
             <div class="stage-card">
                 <h3>
                     <a href="/tournoi?id=<?= intval($stage['id']) ?>">
-                        Etape <?= intval($stage['sort_order']) ?> &mdash; <?= htmlspecialchars($stage['name']) ?>
+                        Étape <?= intval($stage['sort_order']) ?> &mdash; <?= htmlspecialchars($stage['name']) ?>
                     </a>
                     <?php if ($stage['is_completed']): ?>
-                        <span class="stage-badge stage-badge-done">Termine</span>
+                        <span class="stage-badge stage-badge-done">Terminé</span>
                     <?php elseif (($stage['date_end'] ?? $stage['date_start']) < $today): ?>
-                        <span class="stage-badge stage-badge-past">En attente des resultats</span>
+                        <span class="stage-badge stage-badge-past">En attente des résultats</span>
                     <?php else: ?>
-                        <span class="stage-badge stage-badge-upcoming">A venir</span>
+                        <span class="stage-badge stage-badge-upcoming">À venir</span>
                     <?php endif; ?>
                 </h3>
 
@@ -67,7 +67,7 @@
 
                 <?php if ($stage['is_completed'] && $stage['player_count']): ?>
                     <p class="stage-result-link">
-                        <a href="/tournoi?id=<?= intval($stage['id']) ?>"><?= intval($stage['player_count']) ?> joueurs &mdash; Voir les resultats</a>
+                        <a href="/tournoi?id=<?= intval($stage['id']) ?>"><?= intval($stage['player_count']) ?> joueurs &mdash; Voir les résultats</a>
                     </p>
                 <?php endif; ?>
             </div>

@@ -1,4 +1,4 @@
-<h2>Parametres</h2>
+<h2>Paramètres</h2>
 
 <h3>Logo FEFB</h3>
 
@@ -6,7 +6,7 @@
     <p>Logo actuel :</p>
     <img src="/uploads/<?= htmlspecialchars($currentLogo) ?>" alt="Logo FEFB" style="max-height:80px;margin-bottom:1rem">
 <?php else: ?>
-    <p>Aucun logo configure. Le texte "FEFB" est affiche par defaut.</p>
+    <p>Aucun logo configuré. Le texte "FEFB" est affiché par défaut.</p>
 <?php endif; ?>
 
 <form method="POST" action="/admin/settings" enctype="multipart/form-data">

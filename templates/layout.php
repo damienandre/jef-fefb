@@ -19,14 +19,14 @@
         </div>
         <nav>
             <a href="<?= $baseUrl ?>/">Classement</a>
-            <a href="<?= $baseUrl ?>/etapes">Etapes</a>
+            <a href="<?= $baseUrl ?>/etapes">Étapes</a>
         </nav>
     </header>
     <main>
         <?= $content ?>
     </main>
     <footer>
-        <p>&copy; <?= date('Y') ?> FEFB &mdash; Federation Echiquenne Francophone de Belgique</p>
+        <p>&copy; <?= date('Y') ?> FEFB &mdash; Fédération Échiquéenne Francophone de Belgique</p>
     </footer>
 </body>
 </html>

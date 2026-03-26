@@ -4,10 +4,10 @@
     <p>Aucune saison. <a href="/admin/import">Importer un premier fichier TRF</a> pour commencer.</p>
 <?php else: ?>
     <?php foreach ($seasons as $season): ?>
-        <h3>Saison <?= $season['year'] ?> (<?= $season['status'] === 'active' ? 'en cours' : 'terminee' ?>)</h3>
+        <h3>Saison <?= $season['year'] ?> (<?= $season['status'] === 'active' ? 'en cours' : 'terminée' ?>)</h3>
 
         <?php if (empty($tournaments[$season['id']])): ?>
-            <p>Aucun tournoi importe.</p>
+            <p>Aucun tournoi importé.</p>
         <?php else: ?>
             <table class="rankings-table" style="margin-bottom:1.5rem">
                 <thead>
