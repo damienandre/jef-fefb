@@ -16,6 +16,7 @@
                         <th>Tournoi</th>
                         <th>Date</th>
                         <th>Joueurs</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,6 +26,7 @@
                             <td><?= htmlspecialchars($t['name']) ?></td>
                             <td><?= $t['date_start'] ?></td>
                             <td><?= $t['player_count'] ?></td>
+                            <td><a href="/admin/tournament?id=<?= intval($t['id']) ?>">Modifier</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
