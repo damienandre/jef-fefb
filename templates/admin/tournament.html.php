@@ -1,7 +1,7 @@
 <h2>Modifier le tournoi</h2>
 
-<form method="POST" action="/admin/tournament?id=<?= $tournament['id'] ?>">
-    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+<form method="POST" action="/admin/tournament?id=<?= intval($tournament['id']) ?>">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
     <div class="form-group">
         <label for="name">Nom du tournoi</label>
