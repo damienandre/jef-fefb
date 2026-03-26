@@ -19,6 +19,7 @@
         </div>
         <nav>
             <a href="<?= $baseUrl ?>/">Classement</a>
+            <a href="<?= $baseUrl ?>/etapes">Etapes</a>
         </nav>
     </header>
     <main>

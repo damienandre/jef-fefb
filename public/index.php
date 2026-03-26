@@ -9,6 +9,7 @@ $path = rtrim($path, '/') ?: '/';
 
 match ($path) {
     '/'               => require __DIR__ . '/../pages/rankings.php',
+    '/etapes'         => require __DIR__ . '/../pages/stages.php',
     '/tournoi'        => require __DIR__ . '/../pages/tournament.php',
     '/admin/login'    => require __DIR__ . '/../pages/admin/login.php',
     '/admin'          => require __DIR__ . '/../pages/admin/dashboard.php',

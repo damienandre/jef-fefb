@@ -105,4 +105,89 @@ final class TournamentEditTest extends TestCase
 
         $this->assertSame($name, $result->fetchColumn());
     }
+
+    public function testUpdateTournamentStageInfo(): void
+    {
+        $tournamentId = $this->seedTournament('Stage Test');
+
+        $stmt = self::$db->prepare(
+            "UPDATE jef_tournaments
+             SET organizer = ?, address = ?, info_url = ?, registration_url = ?
+             WHERE id = ?"
+        );
+        $stmt->execute([
+            'Club Bruxelles',
+            'Rue de la Loi 1, 1000 Bruxelles',
+            'https://example.com/info',
+            'https://example.com/register',
+            $tournamentId,
+        ]);
+
+        $result = self::$db->prepare(
+            "SELECT organizer, address, info_url, registration_url FROM jef_tournaments WHERE id = ?"
+        );
+        $result->execute([$tournamentId]);
+        $row = $result->fetch();
+
+        $this->assertSame('Club Bruxelles', $row['organizer']);
+        $this->assertSame('Rue de la Loi 1, 1000 Bruxelles', $row['address']);
+        $this->assertSame('https://example.com/info', $row['info_url']);
+        $this->assertSame('https://example.com/register', $row['registration_url']);
+    }
+
+    public function testNullableStageFields(): void
+    {
+        $tournamentId = $this->seedTournament('Nullable Test');
+
+        $result = self::$db->prepare(
+            "SELECT organizer, address, info_url, registration_url FROM jef_tournaments WHERE id = ?"
+        );
+        $result->execute([$tournamentId]);
+        $row = $result->fetch();
+
+        $this->assertNull($row['organizer']);
+        $this->assertNull($row['address']);
+        $this->assertNull($row['info_url']);
+        $this->assertNull($row['registration_url']);
+    }
+
+    public function testUpdateStageInfoPreservesNameAndDates(): void
+    {
+        $tournamentId = $this->seedTournament('Preserve Test');
+
+        $stmt = self::$db->prepare(
+            "UPDATE jef_tournaments SET organizer = ?, info_url = ? WHERE id = ?"
+        );
+        $stmt->execute(['Club Test', 'https://example.com', $tournamentId]);
+
+        $result = self::$db->prepare(
+            "SELECT name, date_start, organizer, info_url FROM jef_tournaments WHERE id = ?"
+        );
+        $result->execute([$tournamentId]);
+        $row = $result->fetch();
+
+        $this->assertSame('Preserve Test', $row['name']);
+        $this->assertSame('2026-03-01', $row['date_start']);
+        $this->assertSame('Club Test', $row['organizer']);
+        $this->assertSame('https://example.com', $row['info_url']);
+    }
+
+    public function testCompletionFlagBasedOnTrfRaw(): void
+    {
+        $tournamentId = $this->seedTournament('Completion Test');
+
+        // Without trf_raw, is_completed should be false
+        $stmt = self::$db->prepare(
+            "SELECT trf_raw IS NOT NULL AS is_completed FROM jef_tournaments WHERE id = ?"
+        );
+        $stmt->execute([$tournamentId]);
+        $this->assertEquals(0, $stmt->fetchColumn());
+
+        // With trf_raw set, is_completed should be true
+        $update = self::$db->prepare("UPDATE jef_tournaments SET trf_raw = ? WHERE id = ?");
+        $update->execute(['some trf content', $tournamentId]);
+
+        $stmt->execute([$tournamentId]);
+        $this->assertEquals(1, $stmt->fetchColumn());
+    }
 }

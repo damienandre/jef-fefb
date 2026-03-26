@@ -12,6 +12,22 @@
         <?php endif; ?>
         &mdash; <?= $tournament['player_count'] ?> joueurs &mdash; <?= $tournament['round_count'] ?> rondes
     </p>
+    <?php if ($tournament['organizer'] || $tournament['address'] || $tournament['info_url'] || (!$tournament['is_completed'] && $tournament['registration_url'])): ?>
+        <div class="tournament-info">
+            <?php if ($tournament['organizer']): ?>
+                <span>Organise par : <?= htmlspecialchars($tournament['organizer']) ?></span>
+            <?php endif; ?>
+            <?php if ($tournament['address']): ?>
+                <span>Adresse : <?= htmlspecialchars($tournament['address']) ?></span>
+            <?php endif; ?>
+            <?php if ($tournament['info_url']): ?>
+                <span><a href="<?= htmlspecialchars($tournament['info_url']) ?>" target="_blank" rel="noopener">Plus d'informations</a></span>
+            <?php endif; ?>
+            <?php if (!$tournament['is_completed'] && $tournament['registration_url']): ?>
+                <a href="<?= htmlspecialchars($tournament['registration_url']) ?>" target="_blank" rel="noopener" class="btn-register">S'inscrire</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php if (empty($players)): ?>
