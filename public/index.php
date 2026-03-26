@@ -13,6 +13,7 @@ match ($path) {
     '/admin/login'    => require __DIR__ . '/../pages/admin/login.php',
     '/admin'          => require __DIR__ . '/../pages/admin/dashboard.php',
     '/admin/import'   => require __DIR__ . '/../pages/admin/import.php',
+    '/admin/tournament' => require __DIR__ . '/../pages/admin/tournament.php',
     '/admin/settings' => require __DIR__ . '/../pages/admin/settings.php',
     '/admin/logout'   => require __DIR__ . '/../pages/admin/logout.php',
     default           => require __DIR__ . '/../pages/404.php',
