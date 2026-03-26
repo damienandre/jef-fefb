@@ -28,6 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $infoUrl = trim($_POST['info_url'] ?? '');
     $registrationUrl = trim($_POST['registration_url'] ?? '');
 
+    $_SESSION['old_input'] = $_POST;
+
     // Validation
     if ($name === '') {
         $_SESSION['flash_error'] = 'Le nom de l\'étape ne peut pas être vide.';
@@ -41,22 +43,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($dateStart === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStart) || !strtotime($dateStart)) {
+    $parsedDateStart = $dateStart !== '' ? \DateTime::createFromFormat('Y-m-d', $dateStart) : false;
+    if (!$parsedDateStart || $parsedDateStart->format('Y-m-d') !== $dateStart) {
         $_SESSION['flash_error'] = 'La date de début est obligatoire et doit être une date valide.';
         header('Location: /admin/add-stage');
         exit;
     }
 
-    if ($dateEnd !== '' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateEnd) || !strtotime($dateEnd))) {
-        $_SESSION['flash_error'] = 'La date de fin doit être une date valide.';
-        header('Location: /admin/add-stage');
-        exit;
-    }
+    if ($dateEnd !== '') {
+        $parsedDateEnd = \DateTime::createFromFormat('Y-m-d', $dateEnd);
+        if (!$parsedDateEnd || $parsedDateEnd->format('Y-m-d') !== $dateEnd) {
+            $_SESSION['flash_error'] = 'La date de fin doit être une date valide.';
+            header('Location: /admin/add-stage');
+            exit;
+        }
 
-    if ($dateEnd !== '' && $dateEnd < $dateStart) {
-        $_SESSION['flash_error'] = 'La date de fin ne peut pas être antérieure à la date de début.';
-        header('Location: /admin/add-stage');
-        exit;
+        if ($dateEnd < $dateStart) {
+            $_SESSION['flash_error'] = 'La date de fin ne peut pas être antérieure à la date de début.';
+            header('Location: /admin/add-stage');
+            exit;
+        }
     }
 
     if ($seasonYear < 2000 || $seasonYear > 2100) {
@@ -108,20 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $seasonId = (int) $db->lastInsertId();
         }
 
-        // Check for duplicate sort_order
-        $stmt = $db->prepare("SELECT id FROM jef_tournaments WHERE season_id = ? AND sort_order = ?");
-        $stmt->execute([$seasonId, $sortOrder]);
-        if ($stmt->fetchColumn()) {
-            $db->rollBack();
-            $_SESSION['flash_error'] = sprintf(
-                'Une étape avec le numéro %d existe déjà pour la saison %d.',
-                $sortOrder,
-                $seasonYear
-            );
-            header('Location: /admin/add-stage');
-            exit;
-        }
-
         $insert = $db->prepare(
             "INSERT INTO jef_tournaments
              (season_id, name, location, organizer, address, info_url, registration_url,
@@ -143,16 +135,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $db->commit();
 
+        unset($_SESSION['old_input']);
         $_SESSION['flash_success'] = sprintf('Étape « %s » ajoutée avec succès.', $name);
         header('Location: /admin');
         exit;
     } catch (\PDOException $e) {
-        $db->rollBack();
-        $_SESSION['flash_error'] = 'Erreur lors de l\'ajout de l\'étape.';
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+
+        if (str_contains($e->getMessage(), 'uk_season_order') || $e->getCode() === '23000') {
+            $_SESSION['flash_error'] = sprintf(
+                'Une étape avec le numéro %d existe déjà pour la saison %d.',
+                $sortOrder,
+                $seasonYear
+            );
+        } else {
+            $_SESSION['flash_error'] = 'Erreur lors de l\'ajout de l\'étape.';
+        }
         header('Location: /admin/add-stage');
         exit;
     }
 }
+
+$oldInput = $_SESSION['old_input'] ?? [];
+unset($_SESSION['old_input']);
 
 $csrfToken = Auth::generateCsrfToken();
 
@@ -160,4 +167,5 @@ View::render('admin/add-stage.html.php', [
     'pageTitle' => 'Ajouter une étape - Administration JEF',
     'csrfToken' => $csrfToken,
     'currentYear' => (int) date('Y'),
+    'old' => $oldInput,
 ], 'admin/layout.php');
