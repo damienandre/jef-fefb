@@ -11,7 +11,7 @@ Auth::requireAuth();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $_SESSION['flash_error'] = 'Session invalide. Veuillez reessayer.';
+        $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
         header('Location: /admin/import');
         exit;
     }
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sortOrder = (int) ($_POST['sort_order'] ?? 1);
 
     if (empty($_FILES['trf_file']['tmp_name']) || $_FILES['trf_file']['error'] !== UPLOAD_ERR_OK) {
-        $_SESSION['flash_error'] = 'Veuillez selectionner un fichier TRF valide.';
+        $_SESSION['flash_error'] = 'Veuillez sélectionner un fichier TRF valide.';
         header('Location: /admin/import');
         exit;
     }
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $result = ImportService::import(Database::get(), $seasonYear, $sortOrder, $trfContent);
         $_SESSION['flash_success'] = sprintf(
-            'Tournoi "%s" importe avec succes (%d joueurs). Classements recalcules.',
+            'Tournoi "%s" importé avec succès (%d joueurs). Classements recalculés.',
             $result['tournament_name'],
             $result['player_count']
         );

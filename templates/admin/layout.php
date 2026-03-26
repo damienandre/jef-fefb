@@ -17,10 +17,10 @@
         <nav class="admin-nav">
             <a href="/admin">Tableau de bord</a>
             <a href="/admin/import">Importer TRF</a>
-            <a href="/admin/settings">Parametres</a>
+            <a href="/admin/settings">Paramètres</a>
             <form method="POST" action="/admin/logout" style="display:inline">
                 <input type="hidden" name="csrf_token" value="<?= \Jef\Auth::generateCsrfToken() ?>">
-                <button type="submit" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font:inherit;text-decoration:underline;">Deconnexion</button>
+                <button type="submit" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font:inherit;text-decoration:underline;">Déconnexion</button>
             </form>
         </nav>
         <?php if (!empty($_SESSION['flash_success'])): ?>

@@ -1,7 +1,7 @@
 <div class="rankings-page">
     <div class="filters">
         <form method="GET" action="/">
-            <label for="annee">Annee :</label>
+            <label for="annee">Année :</label>
             <select name="annee" id="annee" onchange="this.form.submit()">
                 <?php foreach ($availableYears as $year): ?>
                     <option value="<?= $year ?>" <?= $year === $selectedYear ? 'selected' : '' ?>>
@@ -10,10 +10,10 @@
                 <?php endforeach; ?>
             </select>
 
-            <label for="categorie">Categorie :</label>
+            <label for="categorie">Catégorie :</label>
             <select name="categorie" id="categorie" onchange="this.form.submit()">
                 <option value="general" <?= $selectedCategory === 'general' ? 'selected' : '' ?>>
-                    Toutes les categories
+                    Toutes les catégories
                 </option>
                 <?php foreach ($allCategories as $cat): ?>
                     <option value="<?= $cat ?>" <?= $selectedCategory === $cat ? 'selected' : '' ?>>
@@ -25,7 +25,7 @@
     </div>
 
     <?php if (empty($rankings)): ?>
-        <p class="empty-state">Aucun classement disponible pour cette annee<?= $selectedCategory !== 'general' ? ' et cette categorie' : '' ?>.</p>
+        <p class="empty-state">Aucun classement disponible pour cette année<?= $selectedCategory !== 'general' ? ' et cette catégorie' : '' ?>.</p>
     <?php else: ?>
         <div class="table-wrapper">
             <table class="rankings-table">

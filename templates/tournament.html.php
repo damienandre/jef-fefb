@@ -15,7 +15,7 @@
     <?php if ($tournament['organizer'] || $tournament['address'] || $tournament['info_url'] || (!$tournament['is_completed'] && $tournament['registration_url'])): ?>
         <div class="tournament-info">
             <?php if ($tournament['organizer']): ?>
-                <span>Organise par : <?= htmlspecialchars($tournament['organizer']) ?></span>
+                <span>Organisé par : <?= htmlspecialchars($tournament['organizer']) ?></span>
             <?php endif; ?>
             <?php if ($tournament['address']): ?>
                 <span>Adresse : <?= htmlspecialchars($tournament['address']) ?></span>
@@ -31,7 +31,7 @@
 </div>
 
 <?php if (empty($players)): ?>
-    <p class="empty-state">Aucun resultat disponible pour ce tournoi.</p>
+    <p class="empty-state">Aucun résultat disponible pour ce tournoi.</p>
 <?php else: ?>
     <div class="table-wrapper">
         <table class="rankings-table">

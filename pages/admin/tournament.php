@@ -30,20 +30,20 @@ if (!$tournament) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $_SESSION['flash_error'] = 'Session invalide. Veuillez reessayer.';
+        $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
 
     $name = trim($_POST['name'] ?? '');
     if ($name === '') {
-        $_SESSION['flash_error'] = 'Le nom du tournoi ne peut pas etre vide.';
+        $_SESSION['flash_error'] = 'Le nom du tournoi ne peut pas être vide.';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
 
     if (mb_strlen($name) > 200) {
-        $_SESSION['flash_error'] = 'Le nom du tournoi ne peut pas depasser 200 caracteres.';
+        $_SESSION['flash_error'] = 'Le nom du tournoi ne peut pas dépasser 200 caractères.';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
@@ -55,13 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $registrationUrl = trim($_POST['registration_url'] ?? '');
 
     if (mb_strlen($location) > 200 || mb_strlen($organizer) > 200) {
-        $_SESSION['flash_error'] = 'Le lieu et l\'organisateur ne peuvent pas depasser 200 caracteres.';
+        $_SESSION['flash_error'] = 'Le lieu et l\'organisateur ne peuvent pas dépasser 200 caractères.';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
 
     if (mb_strlen($address) > 500 || mb_strlen($infoUrl) > 500 || mb_strlen($registrationUrl) > 500) {
-        $_SESSION['flash_error'] = 'L\'adresse et les URLs ne peuvent pas depasser 500 caracteres.';
+        $_SESSION['flash_error'] = 'L\'adresse et les URLs ne peuvent pas dépasser 500 caractères.';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id,
     ]);
 
-    $_SESSION['flash_success'] = 'Tournoi mis a jour.';
+    $_SESSION['flash_success'] = 'Tournoi mis à jour.';
     header('Location: /admin');
     exit;
 }
