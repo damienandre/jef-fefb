@@ -42,9 +42,12 @@ if ($seasonId) {
     $stages = $stmt->fetchAll();
 }
 
+$today = date('Y-m-d');
+
 View::render('stages.html.php', [
     'pageTitle' => 'Etapes du Circuit JEF',
     'stages' => $stages,
     'selectedYear' => $selectedYear,
     'availableYears' => $availableYears,
+    'today' => $today,
 ], 'layout.php');

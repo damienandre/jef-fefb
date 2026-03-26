@@ -23,6 +23,8 @@
                     </a>
                     <?php if ($stage['is_completed']): ?>
                         <span class="stage-badge stage-badge-done">Termine</span>
+                    <?php elseif (($stage['date_end'] ?? $stage['date_start']) < $today): ?>
+                        <span class="stage-badge stage-badge-past">En attente des resultats</span>
                     <?php else: ?>
                         <span class="stage-badge stage-badge-upcoming">A venir</span>
                     <?php endif; ?>

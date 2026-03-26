@@ -418,6 +418,11 @@ footer {
     color: #664d03;
 }
 
+.stage-badge-past {
+    background: #e2e3e5;
+    color: #41464b;
+}
+
 .stage-result-link {
     margin-top: 0.5rem;
     font-size: 0.8125rem;

@@ -66,14 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($infoUrl !== '' && !filter_var($infoUrl, FILTER_VALIDATE_URL)) {
-        $_SESSION['flash_error'] = 'L\'URL d\'information n\'est pas valide.';
+    if ($infoUrl !== '' && (!filter_var($infoUrl, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $infoUrl))) {
+        $_SESSION['flash_error'] = 'L\'URL d\'information n\'est pas valide (doit commencer par http:// ou https://).';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
 
-    if ($registrationUrl !== '' && !filter_var($registrationUrl, FILTER_VALIDATE_URL)) {
-        $_SESSION['flash_error'] = 'L\'URL d\'inscription n\'est pas valide.';
+    if ($registrationUrl !== '' && (!filter_var($registrationUrl, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $registrationUrl))) {
+        $_SESSION['flash_error'] = 'L\'URL d\'inscription n\'est pas valide (doit commencer par http:// ou https://).';
         header('Location: /admin/tournament?id=' . $id);
         exit;
     }
