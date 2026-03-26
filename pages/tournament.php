@@ -16,8 +16,11 @@ if ($tournamentId <= 0) {
 
 // Get tournament
 $stmt = $db->prepare(
-    "SELECT t.id, t.season_id, t.name, t.location, t.date_start, t.date_end,
-            t.round_count, t.player_count, t.sort_order, s.year as season_year
+    "SELECT t.id, t.season_id, t.name, t.location, t.organizer, t.address,
+            t.date_start, t.date_end, t.round_count, t.player_count, t.sort_order,
+            t.info_url, t.registration_url,
+            t.trf_raw IS NOT NULL AS is_completed,
+            s.year as season_year
      FROM jef_tournaments t
      JOIN jef_seasons s ON s.id = t.season_id
      WHERE t.id = ?"

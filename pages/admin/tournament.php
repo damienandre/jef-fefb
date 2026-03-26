@@ -16,7 +16,10 @@ if (!$id) {
     exit;
 }
 
-$stmt = $db->prepare("SELECT id, name FROM jef_tournaments WHERE id = ?");
+$stmt = $db->prepare(
+    "SELECT id, name, location, organizer, address, info_url, registration_url
+     FROM jef_tournaments WHERE id = ?"
+);
 $stmt->execute([$id]);
 $tournament = $stmt->fetch();
 
@@ -45,10 +48,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $update = $db->prepare("UPDATE jef_tournaments SET name = ? WHERE id = ?");
-    $update->execute([$name, $id]);
+    $location = trim($_POST['location'] ?? '');
+    $organizer = trim($_POST['organizer'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $infoUrl = trim($_POST['info_url'] ?? '');
+    $registrationUrl = trim($_POST['registration_url'] ?? '');
 
-    $_SESSION['flash_success'] = 'Nom du tournoi mis a jour.';
+    if (mb_strlen($location) > 200 || mb_strlen($organizer) > 200) {
+        $_SESSION['flash_error'] = 'Le lieu et l\'organisateur ne peuvent pas depasser 200 caracteres.';
+        header('Location: /admin/tournament?id=' . $id);
+        exit;
+    }
+
+    if (mb_strlen($address) > 500 || mb_strlen($infoUrl) > 500 || mb_strlen($registrationUrl) > 500) {
+        $_SESSION['flash_error'] = 'L\'adresse et les URLs ne peuvent pas depasser 500 caracteres.';
+        header('Location: /admin/tournament?id=' . $id);
+        exit;
+    }
+
+    if ($infoUrl !== '' && !filter_var($infoUrl, FILTER_VALIDATE_URL)) {
+        $_SESSION['flash_error'] = 'L\'URL d\'information n\'est pas valide.';
+        header('Location: /admin/tournament?id=' . $id);
+        exit;
+    }
+
+    if ($registrationUrl !== '' && !filter_var($registrationUrl, FILTER_VALIDATE_URL)) {
+        $_SESSION['flash_error'] = 'L\'URL d\'inscription n\'est pas valide.';
+        header('Location: /admin/tournament?id=' . $id);
+        exit;
+    }
+
+    $update = $db->prepare(
+        "UPDATE jef_tournaments
+         SET name = ?, location = ?, organizer = ?, address = ?, info_url = ?, registration_url = ?
+         WHERE id = ?"
+    );
+    $update->execute([
+        $name,
+        $location === '' ? null : $location,
+        $organizer === '' ? null : $organizer,
+        $address === '' ? null : $address,
+        $infoUrl === '' ? null : $infoUrl,
+        $registrationUrl === '' ? null : $registrationUrl,
+        $id,
+    ]);
+
+    $_SESSION['flash_success'] = 'Tournoi mis a jour.';
     header('Location: /admin');
     exit;
 }

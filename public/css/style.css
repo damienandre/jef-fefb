@@ -352,6 +352,119 @@ footer {
     color: var(--color-primary);
 }
 
+/* Stage cards */
+.stages-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stage-card {
+    background: var(--color-white);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stage-card h3 {
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.stage-card h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.stage-card h3 a:hover {
+    text-decoration: underline;
+}
+
+.stage-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+}
+
+.stage-meta dt {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.stage-meta a {
+    color: var(--color-primary);
+}
+
+.stage-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.stage-badge-done {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.stage-badge-upcoming {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.stage-result-link {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.stage-result-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.stage-result-link a:hover {
+    text-decoration: underline;
+}
+
+/* Tournament info block */
+.tournament-info {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text-light);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+}
+
+.tournament-info a {
+    color: var(--color-primary);
+}
+
+.btn-register {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    background: var(--color-accent);
+    color: var(--color-white);
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.btn-register:hover {
+    opacity: 0.9;
+}
+
+nav a + a {
+    margin-left: 1rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     header {
@@ -379,5 +492,14 @@ footer {
     .rankings-table th,
     .rankings-table td {
         padding: 0.375rem 0.5rem;
+    }
+
+    .stage-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .tournament-info {
+        flex-direction: column;
+        gap: 0.25rem;
     }
 }
