@@ -45,7 +45,7 @@ if ($seasonId) {
 $today = date('Y-m-d');
 
 View::render('stages.html.php', [
-    'pageTitle' => 'Etapes du Circuit JEF',
+    'pageTitle' => 'Étapes du Circuit JEF',
     'stages' => $stages,
     'selectedYear' => $selectedYear,
     'availableYears' => $availableYears,
