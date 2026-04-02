@@ -18,6 +18,7 @@
             <a href="/admin">Tableau de bord</a>
             <a href="/admin/add-stage">Ajouter une étape</a>
             <a href="/admin/import">Importer TRF</a>
+            <a href="/admin/players">Joueurs</a>
             <a href="/admin/settings">Paramètres</a>
             <form method="POST" action="/admin/logout" style="display:inline">
                 <input type="hidden" name="csrf_token" value="<?= \Jef\Auth::generateCsrfToken() ?>">
