@@ -27,9 +27,13 @@ body {
 
 /* Header */
 header {
-    background: var(--color-primary);
-    color: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.header-brand {
+    background: var(--color-white);
     padding: 1rem 2rem;
+    border-bottom: 3px solid var(--color-accent);
 }
 
 .header-content {
@@ -41,40 +45,55 @@ header {
 }
 
 .logo {
-    height: 48px;
+    height: 52px;
     width: auto;
 }
 
 .logo-text {
     font-weight: 700;
     font-size: 1.5rem;
-    background: var(--color-accent);
+    background: var(--color-primary);
+    color: var(--color-white);
     padding: 0.25rem 0.75rem;
     border-radius: 4px;
 }
 
+.header-titles {
+    display: flex;
+    flex-direction: column;
+}
+
 header h1 {
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1.2;
 }
 
 .subtitle {
-    font-size: 0.875rem;
-    opacity: 0.85;
-    margin-left: auto;
+    font-size: 0.8125rem;
+    color: var(--color-text-light);
 }
 
 nav {
+    background: var(--color-primary);
+    padding: 0 2rem;
+}
+
+.nav-content {
     max-width: 1400px;
-    margin: 0.5rem auto 0;
+    margin: 0 auto;
+    display: flex;
+    gap: 0.25rem;
 }
 
 nav a {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
     text-decoration: none;
     font-size: 0.875rem;
-    padding: 0.25rem 0;
+    padding: 0.6rem 1rem;
     border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 nav a:hover {
@@ -469,23 +488,22 @@ footer {
     opacity: 0.9;
 }
 
-nav a + a {
-    margin-left: 1rem;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-    header {
+    .header-brand {
         padding: 0.75rem 1rem;
     }
 
-    .header-content {
-        flex-wrap: wrap;
+    nav {
+        padding: 0 1rem;
     }
 
-    .subtitle {
-        margin-left: 0;
-        width: 100%;
+    .logo {
+        height: 40px;
+    }
+
+    header h1 {
+        font-size: 1.25rem;
     }
 
     .filters form {

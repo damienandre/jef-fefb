@@ -17,6 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Save FEFB URL
+    $fefbUrl = trim($_POST['fefb_url'] ?? '');
+    $stmt = $db->prepare(
+        "INSERT INTO jef_settings (`key`, `value`) VALUES ('fefb_url', ?)
+         ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"
+    );
+    $stmt->execute([$fefbUrl]);
+
     if (!empty($_FILES['logo']['tmp_name']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
         $allowedTypes = ['image/png', 'image/jpeg'];
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
@@ -55,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if (empty($_SESSION['flash_error']) && empty($_SESSION['flash_success'])) {
+        $_SESSION['flash_success'] = 'Paramètres mis à jour avec succès.';
+    }
+
     header('Location: /admin/settings');
     exit;
 }
@@ -63,10 +75,15 @@ $logoStmt = $db->prepare("SELECT `value` FROM jef_settings WHERE `key` = ?");
 $logoStmt->execute(['logo_path']);
 $currentLogo = $logoStmt->fetchColumn();
 
+$urlStmt = $db->prepare("SELECT `value` FROM jef_settings WHERE `key` = ?");
+$urlStmt->execute(['fefb_url']);
+$currentFefbUrl = $urlStmt->fetchColumn() ?: '';
+
 $csrfToken = Auth::generateCsrfToken();
 
 View::render('admin/settings.html.php', [
     'pageTitle' => 'Paramètres - Administration JEF',
     'csrfToken' => $csrfToken,
     'currentLogo' => $currentLogo,
+    'currentFefbUrl' => $currentFefbUrl,
 ], 'admin/layout.php');
