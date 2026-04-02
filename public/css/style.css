@@ -252,8 +252,11 @@ main {
 .result-win { color: #198754; font-weight: 600; }
 .result-draw { color: var(--color-accent); font-weight: 600; }
 .result-loss { color: #dc3545; }
-.color-white { font-size: 0.75rem; }
-.color-black { font-size: 0.75rem; }
+.color-indicator { font-size: 0.75rem; margin: 0 0.15rem; }
+.round-cell { text-align: center; white-space: nowrap; }
+.round-cell[title] { cursor: help; }
+.opponent-rank { font-size: 0.75rem; color: var(--color-text-light); }
+.name .category { margin-left: 0.35rem; }
 
 /* Footer */
 footer {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Jef\Database;
+use Jef\Ranking\AgeCategory;
 use Jef\View;
 
 $db = Database::get();
@@ -36,11 +37,11 @@ if (!$tournament) {
 // Get tournament players with per-round data
 $playersStmt = $db->prepare(
     "SELECT tp.starting_rank, tp.final_rank, tp.points, tp.rounds_data,
-            p.first_name, p.last_name
+            p.first_name, p.last_name, p.birth_date
      FROM jef_tournament_players tp
      JOIN jef_players p ON p.id = tp.player_id
      WHERE tp.tournament_id = ?
-     ORDER BY tp.final_rank ASC, tp.points DESC"
+     ORDER BY tp.points DESC, tp.starting_rank DESC"
 );
 $playersStmt->execute([$tournamentId]);
 $players = $playersStmt->fetchAll();
@@ -51,12 +52,21 @@ foreach ($players as &$player) {
     $player['rounds'] = json_decode($player['rounds_data'], true) ?: [];
     $player['rounds_by_num'] = array_column($player['rounds'], null, 'round');
     $playerNamesByRank[$player['starting_rank']] = $player['first_name'] . ' ' . $player['last_name'];
+    $player['category'] = $player['birth_date'] !== null
+        ? (AgeCategory::determine(new \DateTimeImmutable($player['birth_date']), (int) $tournament['season_year']) ?? '')
+        : '';
 }
 unset($player);
+
+$displayRankByStartingRank = [];
+foreach ($players as $index => $player) {
+    $displayRankByStartingRank[$player['starting_rank']] = $index + 1;
+}
 
 View::render('tournament.html.php', [
     'pageTitle' => $tournament['name'] . ' - Circuit JEF',
     'tournament' => $tournament,
     'players' => $players,
     'playerNamesByRank' => $playerNamesByRank,
+    'displayRankByStartingRank' => $displayRankByStartingRank,
 ], 'layout.php');

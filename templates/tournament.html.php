@@ -46,15 +46,26 @@
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($players as $player): ?>
+                <?php foreach ($players as $index => $player): ?>
                     <tr>
-                        <td class="rank"><?= $player['final_rank'] ?? '—' ?></td>
-                        <td class="name"><?= htmlspecialchars($player['first_name'] . ' ' . $player['last_name']) ?></td>
+                        <td class="rank"><?= $index + 1 ?></td>
+                        <td class="name">
+                            <?= htmlspecialchars($player['first_name'] . ' ' . $player['last_name']) ?>
+                            <?php if (!empty($player['category'])): ?>
+                                <span class="category"><?= htmlspecialchars($player['category']) ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td class="total"><?= number_format((float) $player['points'], 1) ?></td>
                         <?php for ($r = 1; $r <= (int) $tournament['round_count']; $r++): ?>
-                            <?php $round = $player['rounds_by_num'][$r] ?? null; ?>
-                            <td>
-                                <?php if ($round && $round['result']): ?>
+                            <?php
+                            $round = $player['rounds_by_num'][$r] ?? null;
+                            $opponentName = '';
+                            if ($round && !empty($round['opponent_rank'])) {
+                                $opponentName = $playerNamesByRank[$round['opponent_rank']] ?? "#{$round['opponent_rank']}";
+                            }
+                            ?>
+                            <td class="round-cell"<?php if ($opponentName): ?> title="<?= htmlspecialchars($opponentName) ?>"<?php endif; ?>>
+                                <?php if ($round && $round['result'] !== null && $round['result'] !== ''): ?>
                                     <?php
                                     $resultClass = match ($round['result']) {
                                         '1', '+', 'w' => 'result-win',
@@ -72,22 +83,13 @@
                                         'f' => '1F',
                                         default => $round['result'],
                                     };
-                                    $opponentName = '';
-                                    if (!empty($round['opponent_rank'])) {
-                                        $opponentName = $playerNamesByRank[$round['opponent_rank']] ?? "#{$round['opponent_rank']}";
-                                    }
-                                    $colorIndicator = match ($round['color'] ?? '') {
-                                        'w' => 'B',
-                                        'b' => 'N',
-                                        default => '',
-                                    };
                                     ?>
                                     <span class="<?= $resultClass ?>"><?= htmlspecialchars($resultSymbol) ?></span>
-                                    <?php if ($colorIndicator): ?>
-                                        <span class="color-<?= $round['color'] === 'w' ? 'white' : 'black' ?>">(<?= $colorIndicator ?>)</span>
+                                    <?php if ($round['color'] ?? ''): ?>
+                                        <span class="color-indicator"><?= $round['color'] === 'w' ? "\u{25CB}" : "\u{25CF}" ?></span>
                                     <?php endif; ?>
-                                    <?php if ($opponentName): ?>
-                                        <br><small><?= htmlspecialchars($opponentName) ?></small>
+                                    <?php if (!empty($round['opponent_rank'])): ?>
+                                        <span class="opponent-rank"><?= $displayRankByStartingRank[$round['opponent_rank']] ?? '?' ?></span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     —
