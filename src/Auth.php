@@ -12,7 +12,7 @@ final class Auth
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
-                'secure' => true,
+                'secure' => isset($_SERVER['HTTPS']),
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
