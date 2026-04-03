@@ -75,7 +75,7 @@ header h1 {
     color: var(--color-text-light);
 }
 
-nav {
+header nav {
     background: var(--color-primary);
     padding: 0 2rem;
 }
@@ -87,7 +87,7 @@ nav {
     gap: 0.25rem;
 }
 
-nav a {
+header nav a {
     color: rgba(255, 255, 255, 0.85);
     text-decoration: none;
     font-size: 0.875rem;
@@ -96,7 +96,7 @@ nav a {
     transition: color 0.15s, border-color 0.15s;
 }
 
-nav a:hover {
+header nav a:hover {
     color: var(--color-white);
     border-bottom-color: var(--color-accent);
 }
@@ -494,7 +494,7 @@ footer {
         padding: 0.75rem 1rem;
     }
 
-    nav {
+    header nav {
         padding: 0 1rem;
     }
 
