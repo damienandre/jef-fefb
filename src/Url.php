@@ -19,6 +19,7 @@ final class Url
 
     public static function path(string $path = '/'): string
     {
+        assert($path !== '' && $path[0] === '/', 'Path must start with /');
         return self::basePath() . $path;
     }
 
