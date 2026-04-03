@@ -1,6 +1,6 @@
 <h2>Modifier le tournoi</h2>
 
-<form method="POST" action="/admin/tournament?id=<?= intval($tournament['id']) ?>">
+<form method="POST" action="<?= $basePath ?>/admin/tournament?id=<?= intval($tournament['id']) ?>">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
     <div class="form-group">
@@ -34,5 +34,5 @@
     </div>
 
     <button type="submit" class="btn">Enregistrer</button>
-    <a href="/admin" style="margin-left:1rem">Annuler</a>
+    <a href="<?= $basePath ?>/admin" style="margin-left:1rem">Annuler</a>
 </form>

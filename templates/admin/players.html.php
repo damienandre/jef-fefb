@@ -2,9 +2,9 @@
 
 <p>
     <?php if ($showAll): ?>
-        <a href="/admin/players">Afficher uniquement les joueurs sans ID FIDE</a>
+        <a href="<?= $basePath ?>/admin/players">Afficher uniquement les joueurs sans ID FIDE</a>
     <?php else: ?>
-        <a href="/admin/players?all">Afficher tous les joueurs</a>
+        <a href="<?= $basePath ?>/admin/players?all">Afficher tous les joueurs</a>
     <?php endif; ?>
 </p>
 
@@ -32,7 +32,7 @@
                         <td></td>
                     <?php else: ?>
                         <td colspan="2">
-                            <form method="POST" action="/admin/players" style="display:flex;gap:0.5rem;align-items:center">
+                            <form method="POST" action="<?= $basePath ?>/admin/players" style="display:flex;gap:0.5rem;align-items:center">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                 <input type="hidden" name="player_id" value="<?= intval($player['id']) ?>">
                                 <input type="number" name="fide_id" min="1" max="999999999" placeholder="ID FIDE" required style="width:10rem">
@@ -46,4 +46,4 @@
     </table>
 <?php endif; ?>
 
-<p style="margin-top:1rem"><a href="/admin">Retour au tableau de bord</a></p>
+<p style="margin-top:1rem"><a href="<?= $basePath ?>/admin">Retour au tableau de bord</a></p>

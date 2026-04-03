@@ -1,6 +1,6 @@
 <h2>Importer un fichier TRF</h2>
 
-<form method="POST" action="/admin/import" enctype="multipart/form-data">
+<form method="POST" action="<?= $basePath ?>/admin/import" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
 
     <div class="form-group">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? 'Administration - Circuit JEF') ?></title>
-    <link rel="stylesheet" href="<?= $baseUrl ?>/css/style.css">
+    <link rel="stylesheet" href="<?= $basePath ?>/css/style.css">
 </head>
 <body>
     <header>
@@ -15,12 +15,12 @@
     </header>
     <main>
         <nav class="admin-nav">
-            <a href="/admin">Tableau de bord</a>
-            <a href="/admin/add-stage">Ajouter une étape</a>
-            <a href="/admin/import">Importer TRF</a>
-            <a href="/admin/players">Joueurs</a>
-            <a href="/admin/settings">Paramètres</a>
-            <form method="POST" action="/admin/logout" style="display:inline">
+            <a href="<?= $basePath ?>/admin">Tableau de bord</a>
+            <a href="<?= $basePath ?>/admin/add-stage">Ajouter une étape</a>
+            <a href="<?= $basePath ?>/admin/import">Importer TRF</a>
+            <a href="<?= $basePath ?>/admin/players">Joueurs</a>
+            <a href="<?= $basePath ?>/admin/settings">Paramètres</a>
+            <form method="POST" action="<?= $basePath ?>/admin/logout" style="display:inline">
                 <input type="hidden" name="csrf_token" value="<?= \Jef\Auth::generateCsrfToken() ?>">
                 <button type="submit" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font:inherit;text-decoration:underline;">Déconnexion</button>
             </form>

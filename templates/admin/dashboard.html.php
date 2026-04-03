@@ -1,7 +1,7 @@
 <h2>Tableau de bord</h2>
 
 <?php if (empty($seasons)): ?>
-    <p>Aucune saison. <a href="/admin/add-stage">Ajouter une étape</a> ou <a href="/admin/import">importer un fichier TRF</a> pour commencer.</p>
+    <p>Aucune saison. <a href="<?= $basePath ?>/admin/add-stage">Ajouter une étape</a> ou <a href="<?= $basePath ?>/admin/import">importer un fichier TRF</a> pour commencer.</p>
 <?php else: ?>
     <?php foreach ($seasons as $season): ?>
         <h3>Saison <?= $season['year'] ?> (<?= $season['status'] === 'active' ? 'en cours' : 'terminée' ?>)</h3>
@@ -26,7 +26,7 @@
                             <td><?= htmlspecialchars($t['name']) ?></td>
                             <td><?= $t['date_start'] ?></td>
                             <td><?= $t['player_count'] ?></td>
-                            <td><a href="/admin/tournament?id=<?= intval($t['id']) ?>">Modifier</a></td>
+                            <td><a href="<?= $basePath ?>/admin/tournament?id=<?= intval($t['id']) ?>">Modifier</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -8,10 +8,9 @@ final class View
 {
     public static function render(string $template, array $data = [], ?string $layout = null): void
     {
-        if ($layout !== null) {
-            $config = require __DIR__ . '/../config.php';
-            $data['baseUrl'] = rtrim($config['base_url'], '/');
+        $data['basePath'] = Url::basePath();
 
+        if ($layout !== null) {
             $db = Database::get();
             $stmt = $db->prepare("SELECT `key`, `value` FROM jef_settings WHERE `key` IN ('logo_path', 'fefb_url')");
             $stmt->execute();

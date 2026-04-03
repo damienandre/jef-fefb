@@ -1,13 +1,13 @@
 <h2>Paramètres</h2>
 
-<form method="POST" action="/admin/settings" enctype="multipart/form-data">
+<form method="POST" action="<?= $basePath ?>/admin/settings" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
 
     <h3>Logo FEFB</h3>
 
     <?php if ($currentLogo): ?>
         <p>Logo actuel :</p>
-        <img src="/uploads/<?= htmlspecialchars($currentLogo) ?>" alt="Logo FEFB" style="max-height:80px;margin-bottom:1rem">
+        <img src="<?= $basePath ?>/uploads/<?= htmlspecialchars($currentLogo) ?>" alt="Logo FEFB" style="max-height:80px;margin-bottom:1rem">
     <?php else: ?>
         <p>Aucun logo configuré. Le texte "FEFB" est affiché par défaut.</p>
     <?php endif; ?>

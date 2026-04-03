@@ -13,8 +13,7 @@ $db = Database::get();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
-        header('Location: /admin/players');
-        exit;
+        \Jef\Url::redirect('/admin/players');
     }
 
     $playerId = filter_var($_POST['player_id'] ?? '', FILTER_VALIDATE_INT);
@@ -22,38 +21,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$playerId) {
         $_SESSION['flash_error'] = 'Joueur invalide.';
-        header('Location: /admin/players');
-        exit;
+        \Jef\Url::redirect('/admin/players');
     }
 
     if ($fideId === false || $fideId <= 0 || $fideId > 999999999) {
         $_SESSION['flash_error'] = 'L\'ID FIDE doit être un nombre entier positif (max 999 999 999).';
-        header('Location: /admin/players');
-        exit;
+        \Jef\Url::redirect('/admin/players');
     }
 
     $stmt = $db->prepare("SELECT id FROM jef_players WHERE id = ?");
     $stmt->execute([$playerId]);
     if (!$stmt->fetch()) {
         $_SESSION['flash_error'] = 'Joueur introuvable.';
-        header('Location: /admin/players');
-        exit;
+        \Jef\Url::redirect('/admin/players');
     }
 
     $stmt = $db->prepare("SELECT id FROM jef_players WHERE fide_id = ? AND id != ?");
     $stmt->execute([$fideId, $playerId]);
     if ($stmt->fetch()) {
         $_SESSION['flash_error'] = 'Cet ID FIDE est déjà attribué à un autre joueur.';
-        header('Location: /admin/players');
-        exit;
+        \Jef\Url::redirect('/admin/players');
     }
 
     $stmt = $db->prepare("UPDATE jef_players SET fide_id = ? WHERE id = ?");
     $stmt->execute([$fideId, $playerId]);
 
     $_SESSION['flash_success'] = 'ID FIDE mis à jour.';
-    header('Location: /admin/players');
-    exit;
+    \Jef\Url::redirect('/admin/players');
 }
 
 $showAll = isset($_GET['all']);

@@ -3,7 +3,7 @@
     <?php if ($error): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
-    <form method="POST" action="/admin/login">
+    <form method="POST" action="<?= $basePath ?>/admin/login">
         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
         <div class="form-group">
             <label for="username">Identifiant</label>

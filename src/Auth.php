@@ -12,6 +12,7 @@ final class Auth
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
+                'path' => Url::basePath() ?: '/',
                 'secure' => isset($_SERVER['HTTPS']),
                 'httponly' => true,
                 'samesite' => 'Lax',
@@ -24,8 +25,7 @@ final class Auth
     {
         self::ensureSession();
         if (empty($_SESSION['authenticated'])) {
-            header('Location: /admin/login');
-            exit;
+            Url::redirect('/admin/login');
         }
     }
 

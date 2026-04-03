@@ -12,8 +12,7 @@ Auth::requireAuth();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
-        header('Location: /admin/import');
-        exit;
+        \Jef\Url::redirect('/admin/import');
     }
 
     $seasonYear = (int) ($_POST['season_year'] ?? date('Y'));
@@ -21,15 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($_FILES['trf_file']['tmp_name']) || $_FILES['trf_file']['error'] !== UPLOAD_ERR_OK) {
         $_SESSION['flash_error'] = 'Veuillez sélectionner un fichier TRF valide.';
-        header('Location: /admin/import');
-        exit;
+        \Jef\Url::redirect('/admin/import');
     }
 
     $maxSize = 5 * 1024 * 1024; // 5MB
     if ($_FILES['trf_file']['size'] > $maxSize) {
         $_SESSION['flash_error'] = 'Le fichier est trop volumineux (max 5 Mo).';
-        header('Location: /admin/import');
-        exit;
+        \Jef\Url::redirect('/admin/import');
     }
 
     $trfContent = file_get_contents($_FILES['trf_file']['tmp_name']);
@@ -41,16 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result['tournament_name'],
             $result['player_count']
         );
-        header('Location: /admin');
-        exit;
+        \Jef\Url::redirect('/admin');
     } catch (\InvalidArgumentException $e) {
         $_SESSION['flash_error'] = 'Erreur de format TRF : ' . $e->getMessage();
-        header('Location: /admin/import');
-        exit;
+        \Jef\Url::redirect('/admin/import');
     } catch (\Throwable) {
         $_SESSION['flash_error'] = 'Erreur interne lors de l\'import.';
-        header('Location: /admin/import');
-        exit;
+        \Jef\Url::redirect('/admin/import');
     }
 }
 

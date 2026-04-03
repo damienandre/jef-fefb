@@ -1,6 +1,6 @@
 <div class="rankings-page">
     <div class="filters">
-        <form method="GET" action="/">
+        <form method="GET" action="<?= $basePath ?>/">
             <label for="annee">Année :</label>
             <select name="annee" id="annee" onchange="this.form.submit()">
                 <?php foreach ($availableYears as $year): ?>
@@ -37,7 +37,7 @@
                         <th>Total</th>
                         <?php foreach ($tournaments as $t): ?>
                             <th colspan="2">
-                                <a href="/tournoi?id=<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?></a>
+                                <a href="<?= $basePath ?>/tournoi?id=<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?></a>
                             </th>
                         <?php endforeach; ?>
                     </tr>
