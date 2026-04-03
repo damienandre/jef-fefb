@@ -1,6 +1,6 @@
 <div class="stages-page">
     <div class="filters">
-        <form method="GET" action="/etapes">
+        <form method="GET" action="<?= $basePath ?>/etapes">
             <label for="annee">Année :</label>
             <select name="annee" id="annee" onchange="this.form.submit()">
                 <?php foreach ($availableYears as $year): ?>
@@ -18,7 +18,7 @@
         <?php foreach ($stages as $stage): ?>
             <div class="stage-card">
                 <h3>
-                    <a href="/tournoi?id=<?= intval($stage['id']) ?>">
+                    <a href="<?= $basePath ?>/tournoi?id=<?= intval($stage['id']) ?>">
                         Étape <?= intval($stage['sort_order']) ?> &mdash; <?= htmlspecialchars($stage['name']) ?>
                     </a>
                     <?php if ($stage['is_completed']): ?>
@@ -67,7 +67,7 @@
 
                 <?php if ($stage['is_completed'] && $stage['player_count']): ?>
                     <p class="stage-result-link">
-                        <a href="/tournoi?id=<?= intval($stage['id']) ?>"><?= intval($stage['player_count']) ?> joueurs &mdash; Voir les résultats</a>
+                        <a href="<?= $basePath ?>/tournoi?id=<?= intval($stage['id']) ?>"><?= intval($stage['player_count']) ?> joueurs &mdash; Voir les résultats</a>
                     </p>
                 <?php endif; ?>
             </div>

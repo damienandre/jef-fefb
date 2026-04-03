@@ -16,8 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $_POST['password'] ?? '';
 
         if (Auth::login(Database::get(), $username, $password)) {
-            header('Location: /admin');
-            exit;
+            \Jef\Url::redirect('/admin');
         }
         $error = 'Identifiant ou mot de passe incorrect.';
     }

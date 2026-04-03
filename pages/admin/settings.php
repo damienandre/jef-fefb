@@ -13,8 +13,7 @@ $db = Database::get();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $_SESSION['flash_error'] = 'Session invalide. Veuillez réessayer.';
-        header('Location: /admin/settings');
-        exit;
+        \Jef\Url::redirect('/admin/settings');
     }
 
     // Save FEFB URL
@@ -32,15 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!in_array($mimeType, $allowedTypes, true)) {
             $_SESSION['flash_error'] = 'Format de fichier non accepté. Utilisez PNG ou JPG.';
-            header('Location: /admin/settings');
-            exit;
+            \Jef\Url::redirect('/admin/settings');
         }
 
         $maxSize = 2 * 1024 * 1024; // 2MB
         if ($_FILES['logo']['size'] > $maxSize) {
             $_SESSION['flash_error'] = 'Le fichier est trop volumineux (max 2 Mo).';
-            header('Location: /admin/settings');
-            exit;
+            \Jef\Url::redirect('/admin/settings');
         }
 
         $ext = match ($mimeType) {
@@ -67,8 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_success'] = 'Paramètres mis à jour avec succès.';
     }
 
-    header('Location: /admin/settings');
-    exit;
+    \Jef\Url::redirect('/admin/settings');
 }
 
 $logoStmt = $db->prepare("SELECT `value` FROM jef_settings WHERE `key` = ?");

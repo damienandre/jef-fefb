@@ -5,15 +5,12 @@ declare(strict_types=1);
 use Jef\Auth;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/login');
-    exit;
+    \Jef\Url::redirect('/admin/login');
 }
 
 if (!Auth::validateCsrfToken($_POST['csrf_token'] ?? '')) {
-    header('Location: /admin/login');
-    exit;
+    \Jef\Url::redirect('/admin/login');
 }
 
 Auth::logout();
-header('Location: /admin/login');
-exit;
+\Jef\Url::redirect('/admin/login');

@@ -1,4 +1,4 @@
-<a href="/" class="back-link">&larr; Retour au classement</a>
+<a href="<?= $basePath ?>/" class="back-link">&larr; Retour au classement</a>
 
 <div class="tournament-header">
     <h2><?= htmlspecialchars($tournament['name']) ?></h2>

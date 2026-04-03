@@ -24,8 +24,7 @@ final class Auth
     {
         self::ensureSession();
         if (empty($_SESSION['authenticated'])) {
-            header('Location: /admin/login');
-            exit;
+            Url::redirect('/admin/login');
         }
     }
 

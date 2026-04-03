@@ -1,6 +1,6 @@
 <h2>Ajouter une étape</h2>
 
-<form method="POST" action="/admin/add-stage">
+<form method="POST" action="<?= $basePath ?>/admin/add-stage">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
     <div class="form-group">
@@ -56,5 +56,5 @@
     </div>
 
     <button type="submit" class="btn">Ajouter</button>
-    <a href="/admin" style="margin-left:1rem">Annuler</a>
+    <a href="<?= $basePath ?>/admin" style="margin-left:1rem">Annuler</a>
 </form>
