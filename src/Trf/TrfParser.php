@@ -7,18 +7,29 @@ namespace Jef\Trf;
 final class TrfParser
 {
     /**
-     * TRF16 player record (001) field positions (0-indexed from after "001"):
-     * Pos 0-3:   Starting rank (4 chars)
-     * Pos 4:     Space
-     * Pos 5:     Sex (1 char)
-     * Pos 6:     Space
-     * Pos 7-9:   Title (3 chars, but typically 2 + space)
-     * Pos 10:    Space (sometimes part of title)
-     * Pos 10-43: Name (33 chars) — but in practice the title is 2 chars + space, then name starts at pos 10
-     *
-     * Given the variability, we use a regex that is more tolerant of spacing.
+     * TRF16 player record (001) fixed-width field positions (0-indexed):
+     * Col 0-2:   "001" record identifier
+     * Col 3:     Space
+     * Col 4-7:   Starting rank (4 chars, right-justified)
+     * Col 8:     Space
+     * Col 9:     Sex (1 char)
+     * Col 10:    Space
+     * Col 11-13: Title (3 chars)
+     * Col 14-47: Name (34 chars)
+     * Col 48-51: Rating (4 chars)
+     * Col 52:    Space
+     * Col 53-55: Federation (3 chars)
+     * Col 56:    Space
+     * Col 57-67: FIDE ID (11 chars)
+     * Col 68:    Space
+     * Col 69-78: Birth date (10 chars)
+     * Col 79:    Space
+     * Col 80-83: Points (4 chars)
+     * Col 84:    Space
+     * Col 85-88: Final rank (4 chars)
+     * Col 89:    Space
+     * Col 90+:   Round results (10 chars each)
      */
-    private const PLAYER_REGEX = '/^001\s*(?P<rank>\d+)\s+(?P<sex>[mwf ])\s+(?P<title>\w{0,3})\s+(?P<name>[^,]+,\s*\S[^0-9]*?)\s+(?P<rating>\d+)\s+(?P<fed>[A-Z]{3})\s+(?P<id>\d+)\s+(?P<birth>[\d\/.\-]+)\s+(?P<points>[\d.]+)\s+(?P<finalrank>\d+)\s+(?P<rounds>.*)$/';
 
     /**
      * @return array{tournament: TrfTournament, players: TrfPlayer[]}
@@ -110,36 +121,43 @@ final class TrfParser
 
     private function parsePlayerLine(string $line): ?TrfPlayer
     {
-        if (!preg_match(self::PLAYER_REGEX, $line, $m)) {
+        if (strlen($line) < 90) {
             throw new \InvalidArgumentException(
-                'Invalid player record: ' . substr($line, 0, 80)
+                'Invalid player record (too short): ' . substr($line, 0, 80)
             );
         }
 
-        $nameRaw = trim($m['name']);
+        $rank = (int) trim(substr($line, 4, 4));
+        $sex = trim(substr($line, 9, 1)) ?: null;
+        $title = trim(substr($line, 11, 3)) ?: null;
+
+        $nameRaw = trim(substr($line, 14, 34));
         $nameParts = explode(',', $nameRaw, 2);
         $lastName = trim($nameParts[0] ?? '');
         $firstName = trim($nameParts[1] ?? '');
 
-        $fideId = (int) $m['id'];
-        $rating = (int) $m['rating'];
+        $rating = (int) trim(substr($line, 48, 4));
+        $federation = trim(substr($line, 53, 3)) ?: null;
+        $fideId = (int) trim(substr($line, 57, 11));
+        $birthDate = $this->parseBirthDate(trim(substr($line, 69, 10)));
+        $points = (float) trim(substr($line, 80, 4));
+        $finalRank = (int) trim(substr($line, 85, 4));
 
-        $rounds = $this->parseRounds($m['rounds']);
-
-        $birthDate = $this->parseBirthDate(trim($m['birth']));
+        $roundsStr = strlen($line) > 90 ? substr($line, 90) : '';
+        $rounds = $this->parseRounds($roundsStr);
 
         return new TrfPlayer(
-            startingRank: (int) $m['rank'],
-            sex: trim($m['sex']) ?: null,
-            title: trim($m['title']) ?: null,
+            startingRank: $rank,
+            sex: $sex,
+            title: $title,
             lastName: $lastName,
             firstName: $firstName,
             fideRating: $rating > 0 ? $rating : null,
-            federation: trim($m['fed']) ?: null,
+            federation: $federation,
             fideId: $fideId > 0 ? $fideId : null,
             birthDate: $birthDate,
-            points: (float) $m['points'],
-            rank: (int) $m['finalrank'] ?: null,
+            points: $points,
+            rank: $finalRank ?: null,
             rounds: $rounds,
         );
     }

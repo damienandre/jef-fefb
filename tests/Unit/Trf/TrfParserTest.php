@@ -130,6 +130,24 @@ final class TrfParserTest extends TestCase
         $this->assertNotEmpty($byeRounds);
     }
 
+    public function testExtractsNameWithParticle(): void
+    {
+        $content = file_get_contents(__DIR__ . '/../../fixtures/sample.trf');
+        $result = $this->parser->parse($content);
+
+        // Player 23: "De Wilde, Victor" — the "De" prefix must not be stripped
+        $deWilde = null;
+        foreach ($result['players'] as $p) {
+            if ($p->firstName === 'Victor' && $p->startingRank === 23) {
+                $deWilde = $p;
+                break;
+            }
+        }
+        $this->assertNotNull($deWilde);
+        $this->assertSame('De Wilde', $deWilde->lastName);
+        $this->assertSame('Victor', $deWilde->firstName);
+    }
+
     public function testRejectsInvalidFile(): void
     {
         $this->expectException(\InvalidArgumentException::class);
