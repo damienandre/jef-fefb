@@ -49,9 +49,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrfToken = Auth::generateCsrfToken();
+$currentYear = (int) date('Y');
+
+$db = Database::get();
+$importedStages = $db->query(
+    "SELECT s.year, t.sort_order, t.name, t.player_count
+     FROM jef_tournaments t
+     JOIN jef_seasons s ON s.id = t.season_id
+     WHERE t.player_count > 0
+     ORDER BY s.year, t.sort_order"
+)->fetchAll(\PDO::FETCH_ASSOC);
+
+$stagesByYear = [];
+foreach ($importedStages as $stage) {
+    $stagesByYear[(int) $stage['year']][] = [
+        'sort_order' => (int) $stage['sort_order'],
+        'name' => $stage['name'],
+        'player_count' => (int) $stage['player_count'],
+    ];
+}
 
 View::render('admin/import.html.php', [
     'pageTitle' => 'Importer TRF - Administration JEF',
     'csrfToken' => $csrfToken,
-    'currentYear' => (int) date('Y'),
+    'currentYear' => $currentYear,
+    'stagesByYear' => $stagesByYear,
 ], 'admin/layout.php');
