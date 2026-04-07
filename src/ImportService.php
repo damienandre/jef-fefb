@@ -41,21 +41,21 @@ final class ImportService
 
             // Check if tournament exists for this sort_order (reimport)
             $stmt = $db->prepare(
-                "SELECT id FROM jef_tournaments WHERE season_id = ? AND sort_order = ?"
+                "SELECT id, name FROM jef_tournaments WHERE season_id = ? AND sort_order = ?"
             );
             $stmt->execute([$seasonId, $sortOrder]);
-            $existingTournamentId = $stmt->fetchColumn();
+            $existingTournament = $stmt->fetch(PDO::FETCH_ASSOC);
+            $existingTournamentId = $existingTournament ? $existingTournament['id'] : false;
 
             if ($existingTournamentId) {
                 // Delete existing tournament players for reimport
                 $db->prepare("DELETE FROM jef_tournament_players WHERE tournament_id = ?")
                     ->execute([$existingTournamentId]);
-                // Update tournament record
+                // Update tournament record (preserve existing name)
                 $db->prepare(
-                    "UPDATE jef_tournaments SET name = ?, location = ?, date_start = ?, date_end = ?,
+                    "UPDATE jef_tournaments SET location = ?, date_start = ?, date_end = ?,
                      round_count = ?, player_count = ?, trf_raw = ? WHERE id = ?"
                 )->execute([
-                    $trfTournament->name,
                     $trfTournament->city,
                     $trfTournament->dateStart,
                     $trfTournament->dateEnd,
@@ -110,9 +110,13 @@ final class ImportService
 
             $db->commit();
 
+            $tournamentName = $existingTournament
+                ? $existingTournament['name']
+                : $trfTournament->name;
+
             return [
                 'player_count' => count($trfPlayers),
-                'tournament_name' => $trfTournament->name,
+                'tournament_name' => $tournamentName,
             ];
         } catch (\Throwable $e) {
             $db->rollBack();
