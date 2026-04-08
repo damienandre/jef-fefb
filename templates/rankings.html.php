@@ -13,7 +13,7 @@
             <label for="categorie">Catégorie :</label>
             <select name="categorie" id="categorie" onchange="this.form.submit()">
                 <option value="general" <?= $selectedCategory === 'general' ? 'selected' : '' ?>>
-                    Toutes les catégories
+                    Classement général
                 </option>
                 <?php foreach ($allCategories as $cat): ?>
                     <option value="<?= $cat ?>" <?= $selectedCategory === $cat ? 'selected' : '' ?>>

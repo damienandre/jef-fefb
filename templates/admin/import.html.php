@@ -22,3 +22,55 @@
 
     <button type="submit" class="btn">Importer</button>
 </form>
+
+<script>
+(function() {
+    var stagesByYear = <?= json_encode($stagesByYear, JSON_HEX_TAG) ?>;
+    var seasonInput = document.getElementById('season_year');
+    var sortOrderInput = document.getElementById('sort_order');
+    var form = sortOrderInput.closest('form');
+
+    function getStages(year) {
+        return stagesByYear[year] || [];
+    }
+
+    function nextAvailableSortOrder(year) {
+        var stages = getStages(year);
+        var used = {};
+        for (var i = 0; i < stages.length; i++) {
+            used[stages[i].sort_order] = true;
+        }
+        var n = 1;
+        while (used[n]) n++;
+        return n;
+    }
+
+    function findStage(year, sortOrder) {
+        var stages = getStages(year);
+        for (var i = 0; i < stages.length; i++) {
+            if (stages[i].sort_order === sortOrder) return stages[i];
+        }
+        return null;
+    }
+
+    function updateDefault() {
+        sortOrderInput.value = nextAvailableSortOrder(seasonInput.value);
+    }
+
+    seasonInput.addEventListener('change', updateDefault);
+
+    form.addEventListener('submit', function(e) {
+        var stage = findStage(seasonInput.value, parseInt(sortOrderInput.value, 10));
+        if (stage) {
+            var msg = 'La manche ' + stage.sort_order
+                + ' (' + stage.name + ', ' + stage.player_count + ' joueurs)'
+                + ' a d\u00e9j\u00e0 \u00e9t\u00e9 import\u00e9e. Voulez-vous la r\u00e9importer ?';
+            if (!confirm(msg)) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    updateDefault();
+})();
+</script>
