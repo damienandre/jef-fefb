@@ -25,7 +25,7 @@
 
 <script>
 (function() {
-    var stagesByYear = <?= json_encode($stagesByYear, JSON_FORCE_OBJECT) ?>;
+    var stagesByYear = <?= json_encode($stagesByYear, JSON_HEX_TAG) ?>;
     var seasonInput = document.getElementById('season_year');
     var sortOrderInput = document.getElementById('sort_order');
     var form = sortOrderInput.closest('form');
