@@ -233,6 +233,10 @@ final class TrfParser
      * lookup in ImportService::findOrCreatePlayer and creating duplicates. The
      * raw TRF blob persisted in jef_tournaments.trf_raw must also be valid UTF-8
      * to be storable in a utf8mb4 column.
+     *
+     * Non-UTF-8 input is assumed to be Windows-1252 — realistic for European
+     * chess software. ISO-8859-15 or Mac-Roman files would be mis-decoded on
+     * the bytes that diverge (€, œ, Ÿ at 0xA4/0xBC/0xBE for ISO-8859-15).
      */
     public static function normalizeUtf8(string $raw): string
     {
@@ -240,7 +244,13 @@ final class TrfParser
             $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
         }
         $normalized = \Normalizer::normalize($raw, \Normalizer::FORM_C);
-        return $normalized !== false ? $normalized : $raw;
+        if ($normalized === false) {
+            // Surfaces a broken ICU build or unreachable input; aborting the
+            // import is safer than silently storing non-canonical bytes that
+            // would defeat the dedup invariant.
+            throw new \RuntimeException('Unicode NFC normalization failed; check ICU build');
+        }
+        return $normalized;
     }
 
     private static function normalizeText(string $raw): string
