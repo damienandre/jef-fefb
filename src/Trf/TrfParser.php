@@ -52,7 +52,7 @@ final class TrfParser
             if ($din === '001') {
                 $playerLines[] = $line;
             } elseif (preg_match('/^\d{3}$/', $din)) {
-                $headers[$din] = trim($data);
+                $headers[$din] = self::normalizeText($data);
             }
         }
 
@@ -131,7 +131,7 @@ final class TrfParser
         $sex = trim(substr($line, 9, 1)) ?: null;
         $title = trim(substr($line, 11, 3)) ?: null;
 
-        $nameRaw = trim(substr($line, 14, 34));
+        $nameRaw = self::normalizeText(substr($line, 14, 34));
         $nameParts = explode(',', $nameRaw, 2);
         $lastName = trim($nameParts[0] ?? '');
         $firstName = trim($nameParts[1] ?? '');
@@ -221,5 +221,30 @@ final class TrfParser
             return null;
         }
         return $this->parseBirthDate(trim($dateStr));
+    }
+
+    /**
+     * Normalize arbitrary input bytes to UTF-8 NFC.
+     *
+     * TRF files come from heterogeneous sources: chess software on Windows often
+     * emits Windows-1252, macOS tooling can emit decomposed (NFD) UTF-8, and some
+     * tools emit clean NFC UTF-8. Without normalization the same person produces
+     * different byte sequences, defeating the (last_name, first_name, birth_date)
+     * lookup in ImportService::findOrCreatePlayer and creating duplicates. The
+     * raw TRF blob persisted in jef_tournaments.trf_raw must also be valid UTF-8
+     * to be storable in a utf8mb4 column.
+     */
+    public static function normalizeUtf8(string $raw): string
+    {
+        if (!mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+        $normalized = \Normalizer::normalize($raw, \Normalizer::FORM_C);
+        return $normalized !== false ? $normalized : $raw;
+    }
+
+    private static function normalizeText(string $raw): string
+    {
+        return trim(self::normalizeUtf8($raw));
     }
 }

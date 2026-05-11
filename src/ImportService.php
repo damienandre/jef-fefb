@@ -21,6 +21,11 @@ final class ImportService
      */
     public static function import(PDO $db, int $seasonYear, int $sortOrder, string $trfContent): array
     {
+        // TRF fields are byte-positional, so the parser needs the original bytes.
+        // The blob persisted in jef_tournaments.trf_raw needs valid UTF-8 for the
+        // utf8mb4 column, so we keep a separate normalized copy for storage only.
+        $trfContentForStorage = TrfParser::normalizeUtf8($trfContent);
+
         $parser = new TrfParser();
         $result = $parser->parse($trfContent);
         $trfTournament = $result['tournament'];
@@ -61,7 +66,7 @@ final class ImportService
                     $trfTournament->dateEnd,
                     $trfTournament->roundCount,
                     count($trfPlayers),
-                    $trfContent,
+                    $trfContentForStorage,
                     $existingTournamentId,
                 ]);
                 $tournamentId = (int) $existingTournamentId;
@@ -79,7 +84,7 @@ final class ImportService
                     $trfTournament->roundCount,
                     count($trfPlayers),
                     $sortOrder,
-                    $trfContent,
+                    $trfContentForStorage,
                 ]);
                 $tournamentId = (int) $db->lastInsertId();
             }

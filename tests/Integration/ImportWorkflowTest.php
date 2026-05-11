@@ -105,4 +105,59 @@ final class ImportWorkflowTest extends TestCase
         $seasonCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_seasons")->fetchColumn();
         $this->assertSame(0, $seasonCount);
     }
+
+    public function testSamePlayerInDifferentEncodingsDeduplicates(): void
+    {
+        // Same human imported twice — first TRF in UTF-8 NFC, second in Windows-1252.
+        // Without name normalization in the parser, these produced separate jef_players rows
+        // because findOrCreatePlayer matches on (last_name, first_name, birth_date) byte-for-byte.
+        $nfcTrf = $this->buildSinglePlayerTrf('Tournament A', "Lef\u{00E8}bvre,Mah\u{00E9}");
+        $latin1Trf = $this->buildSinglePlayerTrf('Tournament B', "Lef\xE8bvre,Mah\xE9");
+
+        ImportService::import(self::$db, 2026, 1, $nfcTrf);
+        ImportService::import(self::$db, 2026, 2, $latin1Trf);
+
+        $playerCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn();
+        $this->assertSame(1, $playerCount, 'Same person in two encodings must yield one player row');
+
+        $tpCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_tournament_players")->fetchColumn();
+        $this->assertSame(2, $tpCount, 'Player should be linked to both tournaments');
+
+        $player = self::$db->query("SELECT last_name, first_name FROM jef_players")->fetch();
+        $this->assertSame("Lef\u{00E8}bvre", $player['last_name']);
+        $this->assertSame("Mah\u{00E9}", $player['first_name']);
+    }
+
+    private function buildSinglePlayerTrf(string $tournamentName, string $nameField): string
+    {
+        return "012 {$tournamentName}\n"
+             . "042 2026/01/31\n"
+             . $this->buildPlayerLine($nameField) . "\n";
+    }
+
+    private function buildPlayerLine(string $name): string
+    {
+        $name = substr($name, 0, 34);
+        $name = str_pad($name, 34, ' ', STR_PAD_RIGHT);
+        return '001'
+             . ' '
+             . '   1'
+             . ' '
+             . 'm'
+             . ' '
+             . '   '
+             . $name
+             . '   0'
+             . ' '
+             . 'BEL'
+             . ' '
+             . '           '
+             . ' '
+             . '2013/03/17'
+             . ' '
+             . ' 0.0'
+             . ' '
+             . '   1'
+             . ' ';
+    }
 }
