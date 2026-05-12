@@ -81,12 +81,17 @@ final class PlayerNormalizerTest extends TestCase
         $this->assertSame($orphanId, $report['merged'][0]['canonical_id']);
         $this->assertSame([$activeId], $report['merged'][0]['duplicate_ids']);
         $this->assertSame(1, $report['merged'][0]['tournaments_moved']);
+        $this->assertSame(PlayerNormalizer::EVIDENCE_FIDE, $report['merged'][0]['evidence']);
+        $this->assertSame([], $report['merged'][0]['tp_overlaps_dropped']);
         $this->assertSame([$seasonId], $report['seasons_recalculated']);
 
-        $crankCount = (int) self::$db->query(
-            "SELECT COUNT(*) FROM jef_circuit_rankings WHERE ranking_type = 'general'"
-        )->fetchColumn();
-        $this->assertSame(1, $crankCount, 'Ranking should be rebuilt for the merged player');
+        $rankRow = self::$db->query(
+            "SELECT player_id, total_points FROM jef_circuit_rankings WHERE ranking_type = 'general'"
+        )->fetch();
+        $this->assertNotFalse($rankRow, 'Ranking should be rebuilt for the merged player');
+        $this->assertSame($orphanId, (int) $rankRow['player_id']);
+        $this->assertSame(150.0, (float) $rankRow['total_points'],
+            'Sole player gets first place — POINTS_TABLE[0] = 150');
     }
 
     public function testSkipsClusterWithDistinctFideIds(): void
@@ -147,6 +152,87 @@ final class PlayerNormalizerTest extends TestCase
         PlayerNormalizer::run(self::$db, false);
 
         $this->assertSame(1, (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn());
+    }
+
+    public function testSkipsClusterWithNullBirthDateAndNoFide(): void
+    {
+        // Two rows with identical name and NULL birth_date and no FIDE id.
+        // Could be the same human or two distinct people — too weak to merge.
+        self::$db->exec(
+            "INSERT INTO jef_players (fide_id, last_name, first_name, birth_date)
+             VALUES (NULL, 'Smith', 'John', NULL),
+                    (NULL, 'Smith', 'John', NULL)"
+        );
+
+        $report = PlayerNormalizer::run(self::$db, false);
+
+        $this->assertSame(2, (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn(),
+            'Name-only cluster with NULL DOB must not merge');
+        $this->assertCount(0, $report['merged']);
+        $this->assertCount(1, $report['skipped']);
+        $this->assertStringContainsString('NULL birth_date', $report['skipped'][0]['reason']);
+    }
+
+    public function testNameDobOnlyMergeIsTaggedInReport(): void
+    {
+        // No FIDE id anywhere in the cluster, but DOB matches — auto-merge,
+        // tagged as 'name+dob' so dry-run reviewers can scan for surprises.
+        self::$db->exec(
+            "INSERT INTO jef_players (fide_id, last_name, first_name, birth_date)
+             VALUES (NULL, 'Doe', 'Jane', '2010-05-05'),
+                    (NULL, 'Doe', 'Jane', '2010-05-05')"
+        );
+
+        $report = PlayerNormalizer::run(self::$db, false);
+
+        $this->assertSame(1, (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn());
+        $this->assertCount(1, $report['merged']);
+        $this->assertSame(PlayerNormalizer::EVIDENCE_NAME_DOB, $report['merged'][0]['evidence']);
+    }
+
+    public function testTpOverlapsAreReportedWhenDataDiffers(): void
+    {
+        // Both duplicate and canonical have a TP row for the same tournament
+        // with different points. Canonical wins; the dropped row's data is
+        // surfaced in the report so the operator can audit.
+        [, $tournamentId] = $this->seedSeasonAndTournament();
+
+        self::$db->exec(
+            "INSERT INTO jef_players (fide_id, last_name, first_name, birth_date)
+             VALUES (123456, 'Overlap', 'Test', '2010-01-01')"
+        );
+        $canonicalId = (int) self::$db->lastInsertId();
+
+        self::$db->exec(
+            "INSERT INTO jef_players (fide_id, last_name, first_name, birth_date)
+             VALUES (NULL, 'Overlap', 'Test', '2010-01-01')"
+        );
+        $dupId = (int) self::$db->lastInsertId();
+
+        $tpInsert = self::$db->prepare(
+            "INSERT INTO jef_tournament_players
+             (tournament_id, player_id, starting_rank, final_rank, points, rounds_data)
+             VALUES (?, ?, ?, ?, ?, '[]')"
+        );
+        $tpInsert->execute([$tournamentId, $canonicalId, 1, 1, 7.5]);
+        $tpInsert->execute([$tournamentId, $dupId,       2, 5, 3.0]);
+
+        $report = PlayerNormalizer::run(self::$db, false);
+
+        $this->assertCount(1, $report['merged']);
+        $overlaps = $report['merged'][0]['tp_overlaps_dropped'];
+        $this->assertCount(1, $overlaps);
+        $this->assertSame($tournamentId, $overlaps[0]['tournament_id']);
+        $this->assertSame($dupId, $overlaps[0]['dropped_player_id']);
+        $this->assertSame(3.0, $overlaps[0]['dropped_points']);
+        $this->assertSame(5, $overlaps[0]['dropped_rank']);
+        $this->assertSame(7.5, $overlaps[0]['kept_points']);
+        $this->assertSame(1, $overlaps[0]['kept_rank']);
+
+        // Canonical's row survived
+        $tp = self::$db->query("SELECT player_id, points FROM jef_tournament_players")->fetch();
+        $this->assertSame($canonicalId, (int) $tp['player_id']);
+        $this->assertSame(7.5, (float) $tp['points']);
     }
 
     public function testDryRunDoesNotPersistChanges(): void

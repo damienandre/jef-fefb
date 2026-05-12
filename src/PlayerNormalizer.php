@@ -13,16 +13,22 @@ use PDO;
  * and merges duplicate rows that PR #16 prevents at import time but does not
  * retroactively clean up.
  *
- * The merge picks a canonical row per (last_name, first_name, birth_date)
- * cluster, repoints jef_tournament_players from duplicates onto the canonical,
- * deletes the duplicates, and recalculates rankings for every affected season.
+ * Merges are tagged by evidence strength:
+ *   - 'fide'    — at least one row in the cluster has a FIDE id (high confidence)
+ *   - 'name+dob' — no FIDE id but birth_date is set (moderate confidence)
+ * Clusters with NULL birth_date and no FIDE id are skipped: name-only matching
+ * is too weak to merge automatically, especially since birth_date is nullable
+ * (see migration 002).
  */
 final class PlayerNormalizer
 {
+    public const EVIDENCE_FIDE = 'fide';
+    public const EVIDENCE_NAME_DOB = 'name+dob';
+
     /**
      * @return array{
      *     renamed: array<int, array{id:int, before_last:string, before_first:string, after_last:string, after_first:string}>,
-     *     merged: array<int, array{canonical_id:int, duplicate_ids:int[], tournaments_moved:int}>,
+     *     merged: array<int, array{canonical_id:int, duplicate_ids:int[], tournaments_moved:int, evidence:string, tp_overlaps_dropped:array}>,
      *     skipped: array<int, array{last_name:string, first_name:string, birth_date:?string, ids:int[], reason:string}>,
      *     seasons_recalculated: int[]
      * }
@@ -107,6 +113,31 @@ final class PlayerNormalizer
             $clusters[$key][] = $p;
         }
 
+        // Hoist fixed-shape prepares — PDO emulation is off so each prepare
+        // is a server round-trip; the IN-clause DELETE stays inline because
+        // its placeholder count varies per cluster.
+        $seasonsStmt = $db->prepare(
+            "SELECT DISTINCT t.season_id
+             FROM jef_tournament_players tp
+             JOIN jef_tournaments t ON t.id = tp.tournament_id
+             WHERE tp.player_id = ?"
+        );
+        $overlapStmt = $db->prepare(
+            "SELECT dup.tournament_id,
+                    dup.points  AS dup_points,  dup.final_rank  AS dup_rank,
+                    canon.points AS canon_points, canon.final_rank AS canon_rank
+             FROM jef_tournament_players dup
+             JOIN jef_tournament_players canon
+               ON canon.tournament_id = dup.tournament_id AND canon.player_id = ?
+             WHERE dup.player_id = ?"
+        );
+        $moveStmt = $db->prepare(
+            "UPDATE jef_tournament_players SET player_id = ? WHERE player_id = ?"
+        );
+        $delCresStmt = $db->prepare("DELETE FROM jef_circuit_results   WHERE player_id = ?");
+        $delCrankStmt = $db->prepare("DELETE FROM jef_circuit_rankings WHERE player_id = ?");
+        $delPlayerStmt = $db->prepare("DELETE FROM jef_players          WHERE id = ?");
+
         $merged = [];
         $skipped = [];
         $touchedSeasons = [];
@@ -121,16 +152,25 @@ final class PlayerNormalizer
             // plausibly different people, needs human review.
             $withFide = array_values(array_filter($rows, fn($r) => $r['fide_id'] !== null));
             if (count($withFide) > 1) {
-                $skipped[] = [
-                    'last_name' => $rows[0]['last_name'],
-                    'first_name' => $rows[0]['first_name'],
-                    'birth_date' => $rows[0]['birth_date'],
-                    'ids' => array_map(fn($r) => (int) $r['id'], $rows),
-                    'reason' => 'multiple distinct FIDE ids: '
-                        . implode(', ', array_map(fn($r) => (int) $r['fide_id'], $withFide)),
-                ];
+                $skipped[] = self::skipEntry(
+                    $rows,
+                    'multiple distinct FIDE ids: '
+                        . implode(', ', array_map(fn($r) => (int) $r['fide_id'], $withFide))
+                );
                 continue;
             }
+
+            // Name-only match (no FIDE, no DOB) is too weak — could be two real
+            // distinct people. Surface for human decision instead of merging.
+            if (empty($withFide) && ($rows[0]['birth_date'] ?? null) === null) {
+                $skipped[] = self::skipEntry(
+                    $rows,
+                    'ambiguous: NULL birth_date and no FIDE id on any row'
+                );
+                continue;
+            }
+
+            $evidence = !empty($withFide) ? self::EVIDENCE_FIDE : self::EVIDENCE_NAME_DOB;
 
             $canonical = $withFide[0] ?? $rows[0];
             $canonicalId = (int) $canonical['id'];
@@ -140,14 +180,9 @@ final class PlayerNormalizer
             ));
 
             $tournamentsMoved = 0;
+            $tpOverlapsDropped = [];
+
             foreach ($duplicateIds as $dupId) {
-                // Collect every season this duplicate touches before we mutate.
-                $seasonsStmt = $db->prepare(
-                    "SELECT DISTINCT t.season_id
-                     FROM jef_tournament_players tp
-                     JOIN jef_tournaments t ON t.id = tp.tournament_id
-                     WHERE tp.player_id = ?"
-                );
                 $seasonsStmt->execute([$dupId]);
                 foreach ($seasonsStmt->fetchAll(PDO::FETCH_COLUMN) as $sid) {
                     $touchedSeasons[(int) $sid] = true;
@@ -155,46 +190,65 @@ final class PlayerNormalizer
 
                 // Drop dup's TP rows for tournaments the canonical also played
                 // (uk_tournament_player would otherwise block the repoint).
-                $overlapStmt = $db->prepare(
-                    "SELECT dup.tournament_id
-                     FROM jef_tournament_players dup
-                     JOIN jef_tournament_players canon
-                       ON canon.tournament_id = dup.tournament_id AND canon.player_id = ?
-                     WHERE dup.player_id = ?"
-                );
+                // Capture both rows' points/rank so the operator can audit
+                // whether the canonical's data was the right one to keep.
                 $overlapStmt->execute([$canonicalId, $dupId]);
-                $overlapping = array_map('intval', $overlapStmt->fetchAll(PDO::FETCH_COLUMN));
+                $overlaps = $overlapStmt->fetchAll();
 
-                if (!empty($overlapping)) {
+                if (!empty($overlaps)) {
+                    foreach ($overlaps as $o) {
+                        $tpOverlapsDropped[] = [
+                            'tournament_id' => (int) $o['tournament_id'],
+                            'dropped_player_id' => $dupId,
+                            'dropped_points' => (float) $o['dup_points'],
+                            'dropped_rank' => $o['dup_rank'] !== null ? (int) $o['dup_rank'] : null,
+                            'kept_points' => (float) $o['canon_points'],
+                            'kept_rank' => $o['canon_rank'] !== null ? (int) $o['canon_rank'] : null,
+                        ];
+                    }
+                    $overlapping = array_column($overlaps, 'tournament_id');
                     $placeholders = implode(',', array_fill(0, count($overlapping), '?'));
-                    $del = $db->prepare(
+                    $db->prepare(
                         "DELETE FROM jef_tournament_players
                          WHERE player_id = ? AND tournament_id IN ({$placeholders})"
-                    );
-                    $del->execute(array_merge([$dupId], $overlapping));
+                    )->execute(array_merge([$dupId], $overlapping));
                 }
 
-                $move = $db->prepare(
-                    "UPDATE jef_tournament_players SET player_id = ? WHERE player_id = ?"
-                );
-                $move->execute([$canonicalId, $dupId]);
-                $tournamentsMoved += $move->rowCount();
+                $moveStmt->execute([$canonicalId, $dupId]);
+                $tournamentsMoved += $moveStmt->rowCount();
 
                 // FK on jef_circuit_{results,rankings}.player_id is RESTRICT, so
                 // clear them before deleting the player. They'll be rebuilt by
                 // RankingCalculator::recalculate for the affected seasons.
-                $db->prepare("DELETE FROM jef_circuit_results WHERE player_id = ?")->execute([$dupId]);
-                $db->prepare("DELETE FROM jef_circuit_rankings WHERE player_id = ?")->execute([$dupId]);
-                $db->prepare("DELETE FROM jef_players WHERE id = ?")->execute([$dupId]);
+                $delCresStmt->execute([$dupId]);
+                $delCrankStmt->execute([$dupId]);
+                $delPlayerStmt->execute([$dupId]);
             }
 
             $merged[] = [
                 'canonical_id' => $canonicalId,
                 'duplicate_ids' => $duplicateIds,
                 'tournaments_moved' => $tournamentsMoved,
+                'evidence' => $evidence,
+                'tp_overlaps_dropped' => $tpOverlapsDropped,
             ];
         }
 
         return [$merged, $skipped, array_keys($touchedSeasons)];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array{last_name:string, first_name:string, birth_date:?string, ids:int[], reason:string}
+     */
+    private static function skipEntry(array $rows, string $reason): array
+    {
+        return [
+            'last_name' => $rows[0]['last_name'],
+            'first_name' => $rows[0]['first_name'],
+            'birth_date' => $rows[0]['birth_date'],
+            'ids' => array_map(fn($r) => (int) $r['id'], $rows),
+            'reason' => $reason,
+        ];
     }
 }

@@ -7,7 +7,18 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Jef\Database;
 use Jef\PlayerNormalizer;
 
-$dryRun = in_array('--dry-run', $argv, true) || in_array('-n', $argv, true);
+$scriptName = array_shift($argv) ?? 'cli/normalize-players.php';
+
+$known = ['--dry-run' => true, '-n' => true];
+$dryRun = false;
+foreach ($argv as $arg) {
+    if (!isset($known[$arg])) {
+        fwrite(STDERR, "Unknown argument: {$arg}\n");
+        fwrite(STDERR, "Usage: php {$scriptName} [--dry-run|-n]\n");
+        exit(2);
+    }
+    $dryRun = true;
+}
 
 $db = Database::get();
 
@@ -28,16 +39,22 @@ if (!empty($report['renamed'])) {
     }
 }
 
-if (!empty($report['merged'])) {
-    echo "\nClusters merged:\n";
-    foreach ($report['merged'] as $m) {
-        $dups = implode(', ', array_map(fn($i) => '#' . $i, $m['duplicate_ids']));
-        printf(
-            "  canonical #%d  <-  duplicates [%s]  (%d tournament row(s) moved)\n",
-            $m['canonical_id'],
-            $dups,
-            $m['tournaments_moved']
-        );
+$mergedByEvidence = ['fide' => [], 'name+dob' => []];
+foreach ($report['merged'] as $m) {
+    $mergedByEvidence[$m['evidence']][] = $m;
+}
+
+if (!empty($mergedByEvidence['fide'])) {
+    echo "\nClusters merged (FIDE-anchored):\n";
+    foreach ($mergedByEvidence['fide'] as $m) {
+        printMergeLine($m);
+    }
+}
+
+if (!empty($mergedByEvidence['name+dob'])) {
+    echo "\nClusters merged (name + birth_date only — review on dry-run):\n";
+    foreach ($mergedByEvidence['name+dob'] as $m) {
+        printMergeLine($m);
     }
 }
 
@@ -60,10 +77,36 @@ if (!empty($report['seasons_recalculated'])) {
 }
 
 echo "\nSummary:\n";
-echo "  rows normalized:      " . count($report['renamed']) . "\n";
-echo "  clusters merged:      " . count($report['merged']) . "\n";
-echo "  clusters skipped:     " . count($report['skipped']) . "\n";
-echo "  seasons recalculated: " . count($report['seasons_recalculated']) . "\n";
+echo "  rows normalized:           " . count($report['renamed']) . "\n";
+echo "  clusters merged (FIDE):    " . count($mergedByEvidence['fide']) . "\n";
+echo "  clusters merged (name+dob):" . count($mergedByEvidence['name+dob']) . "\n";
+echo "  clusters skipped:          " . count($report['skipped']) . "\n";
+echo "  seasons recalculated:      " . count($report['seasons_recalculated']) . "\n";
 echo $dryRun
     ? "\n[DRY RUN] No changes were committed. Re-run without --dry-run to apply.\n"
     : "\nDone.\n";
+
+/**
+ * @param array{canonical_id:int, duplicate_ids:int[], tournaments_moved:int, evidence:string, tp_overlaps_dropped:array} $m
+ */
+function printMergeLine(array $m): void
+{
+    $dups = implode(', ', array_map(fn($i) => '#' . $i, $m['duplicate_ids']));
+    printf(
+        "  canonical #%d  <-  duplicates [%s]  (%d tournament row(s) moved)\n",
+        $m['canonical_id'],
+        $dups,
+        $m['tournaments_moved']
+    );
+    foreach ($m['tp_overlaps_dropped'] as $o) {
+        printf(
+            "      DROPPED tp tournament=%d player=%d points=%.1f rank=%s  (kept canonical points=%.1f rank=%s)\n",
+            $o['tournament_id'],
+            $o['dropped_player_id'],
+            $o['dropped_points'],
+            $o['dropped_rank'] ?? '?',
+            $o['kept_points'],
+            $o['kept_rank'] ?? '?'
+        );
+    }
+}
