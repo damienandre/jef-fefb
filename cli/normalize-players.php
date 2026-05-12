@@ -77,11 +77,11 @@ if (!empty($report['seasons_recalculated'])) {
 }
 
 echo "\nSummary:\n";
-echo "  rows normalized:           " . count($report['renamed']) . "\n";
-echo "  clusters merged (FIDE):    " . count($mergedByEvidence['fide']) . "\n";
-echo "  clusters merged (name+dob):" . count($mergedByEvidence['name+dob']) . "\n";
-echo "  clusters skipped:          " . count($report['skipped']) . "\n";
-echo "  seasons recalculated:      " . count($report['seasons_recalculated']) . "\n";
+printf("  %-28s%d\n", 'rows normalized:',            count($report['renamed']));
+printf("  %-28s%d\n", 'clusters merged (FIDE):',     count($mergedByEvidence['fide']));
+printf("  %-28s%d\n", 'clusters merged (name+dob):', count($mergedByEvidence['name+dob']));
+printf("  %-28s%d\n", 'clusters skipped:',           count($report['skipped']));
+printf("  %-28s%d\n", 'seasons recalculated:',       count($report['seasons_recalculated']));
 echo $dryRun
     ? "\n[DRY RUN] No changes were committed. Re-run without --dry-run to apply.\n"
     : "\nDone.\n";
