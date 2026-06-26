@@ -36,10 +36,12 @@ if (!$tournament) {
 
 // Get tournament players with per-round data
 $playersStmt = $db->prepare(
-    "SELECT tp.starting_rank, tp.final_rank, tp.points, tp.rounds_data,
-            p.first_name, p.last_name, p.birth_date
+    "SELECT tp.starting_rank, tp.final_rank, tp.points, tp.rating, tp.rounds_data,
+            p.first_name, p.last_name, p.birth_date,
+            COALESCE(c.name_short, c.name_long) AS club_name
      FROM jef_tournament_players tp
      JOIN jef_players p ON p.id = tp.player_id
+     LEFT JOIN jef_clubs c ON c.idclub = tp.club_id
      WHERE tp.tournament_id = ?
      ORDER BY tp.points DESC, tp.starting_rank DESC"
 );

@@ -17,6 +17,8 @@
                 <th>Nom</th>
                 <th>Prénom</th>
                 <th>Date de naissance</th>
+                <th>Club</th>
+                <th>ID belge</th>
                 <th>ID FIDE</th>
                 <th></th>
             </tr>
@@ -27,6 +29,8 @@
                     <td><?= htmlspecialchars($player['last_name']) ?></td>
                     <td><?= htmlspecialchars($player['first_name']) ?></td>
                     <td><?= $player['birth_date'] ? date('d/m/Y', strtotime($player['birth_date'])) : '—' ?></td>
+                    <td><?= !empty($player['club_name']) ? htmlspecialchars($player['club_name']) : '—' ?></td>
+                    <td><?= !empty($player['belgian_id']) ? intval($player['belgian_id']) : '—' ?></td>
                     <?php if ($player['fide_id'] && $player['fide_id'] > 0): ?>
                         <td><?= intval($player['fide_id']) ?></td>
                         <td></td>

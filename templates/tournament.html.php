@@ -39,6 +39,8 @@
                 <tr>
                     <th>Cl.</th>
                     <th>Nom</th>
+                    <th>Club</th>
+                    <th>Elo</th>
                     <th>Pts</th>
                     <?php for ($r = 1; $r <= (int) $tournament['round_count']; $r++): ?>
                         <th>R<?= $r ?></th>
@@ -55,6 +57,8 @@
                                 <span class="category"><?= htmlspecialchars($player['category']) ?></span>
                             <?php endif; ?>
                         </td>
+                        <td class="club"><?= !empty($player['club_name']) ? htmlspecialchars($player['club_name']) : '—' ?></td>
+                        <td class="rating"><?= $player['rating'] !== null ? (int) $player['rating'] : '—' ?></td>
                         <td class="total"><?= number_format((float) $player['points'], 1) ?></td>
                         <?php for ($r = 1; $r <= (int) $tournament['round_count']; $r++): ?>
                             <?php

@@ -33,6 +33,7 @@
                     <tr>
                         <th>Rang</th>
                         <th>Nom</th>
+                        <th>Club</th>
                         <th>Cat.</th>
                         <th>Total</th>
                         <?php foreach ($tournaments as $t): ?>
@@ -43,6 +44,7 @@
                     </tr>
                     <?php if (!empty($tournaments)): ?>
                     <tr class="sub-header">
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -59,6 +61,7 @@
                         <tr>
                             <td class="rank"><?= $row['rank'] ?></td>
                             <td class="name"><?= htmlspecialchars($row['first_name'] . ' ' . $row['last_name']) ?></td>
+                            <td class="club"><?= !empty($row['club_name']) ? htmlspecialchars($row['club_name']) : '—' ?></td>
                             <td class="category"><?= htmlspecialchars($row['category']) ?></td>
                             <td class="total"><?= number_format((float) $row['total_points'], 1) ?></td>
                             <?php foreach ($tournaments as $t): ?>
