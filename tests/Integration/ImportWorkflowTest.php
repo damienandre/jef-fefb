@@ -42,7 +42,8 @@ final class ImportWorkflowTest extends TestCase
     {
         $trfContent = file_get_contents(__DIR__ . '/../fixtures/sample.trf');
 
-        $result = ImportService::import(self::$db, 2026, 1, $trfContent);
+        // Inject a no-op API so enrichment never touches the network in tests.
+        $result = ImportService::import(self::$db, 2026, 1, $trfContent, new FrbeApiStub());
 
         $this->assertSame(123, $result['player_count']);
         $this->assertSame('JEF 2026 Etape 1 Rounds 1 - 9', $result['tournament_name']);
@@ -59,6 +60,12 @@ final class ImportWorkflowTest extends TestCase
         // Verify players created
         $playerCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn();
         $this->assertSame(123, $playerCount);
+
+        // Verify the FIDE rating from the TRF is stored per participation.
+        $rating = self::$db->query(
+            "SELECT rating FROM jef_tournament_players WHERE starting_rank = 1"
+        )->fetchColumn();
+        $this->assertSame(1920, (int) $rating, 'Rating should be persisted from the TRF (Drugmand, Benoit = 1920)');
 
         // Verify rankings calculated
         $rankingCount = (int) self::$db->query(
@@ -78,10 +85,10 @@ final class ImportWorkflowTest extends TestCase
         $trfContent = file_get_contents(__DIR__ . '/../fixtures/sample.trf');
 
         // First import
-        ImportService::import(self::$db, 2026, 1, $trfContent);
+        ImportService::import(self::$db, 2026, 1, $trfContent, new FrbeApiStub());
 
         // Reimport same sort_order
-        $result = ImportService::import(self::$db, 2026, 1, $trfContent);
+        $result = ImportService::import(self::$db, 2026, 1, $trfContent, new FrbeApiStub());
 
         $this->assertSame(123, $result['player_count']);
 
@@ -114,8 +121,8 @@ final class ImportWorkflowTest extends TestCase
         $nfcTrf = $this->buildSinglePlayerTrf('Tournament A', "Lef\u{00E8}bvre,Mah\u{00E9}");
         $latin1Trf = $this->buildSinglePlayerTrf('Tournament B', "Lef\xE8bvre,Mah\xE9");
 
-        ImportService::import(self::$db, 2026, 1, $nfcTrf);
-        ImportService::import(self::$db, 2026, 2, $latin1Trf);
+        ImportService::import(self::$db, 2026, 1, $nfcTrf, new FrbeApiStub());
+        ImportService::import(self::$db, 2026, 2, $latin1Trf, new FrbeApiStub());
 
         $playerCount = (int) self::$db->query("SELECT COUNT(*) FROM jef_players")->fetchColumn();
         $this->assertSame(1, $playerCount, 'Same person in two encodings must yield one player row');

@@ -8,6 +8,11 @@
             "Jef\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "require": {
         "php": ">=8.5",
         "ext-intl": "*",

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Jef;
 
+use Jef\Frbe\FrbeApi;
+use Jef\Frbe\FrbeApiClient;
 use Jef\Ranking\RankingCalculator;
 use Jef\Trf\TrfParser;
 use PDO;
@@ -15,12 +17,19 @@ final class ImportService
      * Creates/updates season, tournament, players, and recalculates rankings.
      * All operations happen within a single transaction.
      *
+     * @param FrbeApi|null $enrichmentApi Injectable for tests; defaults to the
+     *                                     live FRBE client in production.
      * @return array{player_count: int, tournament_name: string}
      * @throws \InvalidArgumentException on parse errors
      * @throws \RuntimeException on database errors
      */
-    public static function import(PDO $db, int $seasonYear, int $sortOrder, string $trfContent): array
-    {
+    public static function import(
+        PDO $db,
+        int $seasonYear,
+        int $sortOrder,
+        string $trfContent,
+        ?FrbeApi $enrichmentApi = null
+    ): array {
         // TRF fields are byte-positional, so the parser needs the original bytes.
         // The blob persisted in jef_tournaments.trf_raw needs valid UTF-8 for the
         // utf8mb4 column, so we keep a separate normalized copy for storage only.
@@ -91,8 +100,8 @@ final class ImportService
 
             $insertTpStmt = $db->prepare(
                 "INSERT INTO jef_tournament_players
-                 (tournament_id, player_id, starting_rank, final_rank, points, rounds_data)
-                 VALUES (?, ?, ?, ?, ?, ?)"
+                 (tournament_id, player_id, starting_rank, final_rank, points, rating, rounds_data)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)"
             );
 
             foreach ($trfPlayers as $trfPlayer) {
@@ -106,6 +115,8 @@ final class ImportService
                     $trfPlayer->startingRank,
                     $trfPlayer->rank,
                     $trfPlayer->points,
+                    // FIDE rating used in this tournament, straight from the TRF.
+                    $trfPlayer->fideRating ?: null,
                     $roundsJson,
                 ]);
             }
@@ -114,6 +125,19 @@ final class ImportService
             RankingCalculator::recalculate($db, $seasonId);
 
             $db->commit();
+
+            // Best-effort club/belgian-id enrichment from the FRBE API. Runs
+            // outside the import transaction so a slow or unreachable API never
+            // rolls back the import; cli/enrich-players.php is the safety net.
+            try {
+                PlayerClubEnricher::enrichTournament(
+                    $db,
+                    $enrichmentApi ?? new FrbeApiClient(),
+                    $tournamentId
+                );
+            } catch (\Throwable) {
+                // ignored — enrichment is non-critical and re-runnable
+            }
 
             $tournamentName = $existingTournament
                 ? $existingTournament['name']

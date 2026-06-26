@@ -47,7 +47,16 @@ if ($seasonId) {
     // Get rankings
     $rankStmt = $db->prepare(
         "SELECT cr.`rank`, cr.total_points, cr.player_id,
-                p.first_name, p.last_name, p.birth_date
+                p.first_name, p.last_name, p.birth_date,
+                (SELECT COALESCE(c.name_short, c.name_long)
+                   FROM jef_tournament_players tp
+                   JOIN jef_tournaments t ON t.id = tp.tournament_id
+                   LEFT JOIN jef_clubs c ON c.idclub = tp.club_id
+                  WHERE tp.player_id = cr.player_id
+                    AND t.season_id = cr.season_id
+                    AND tp.club_id IS NOT NULL
+                  ORDER BY t.date_start DESC, t.sort_order DESC
+                  LIMIT 1) AS club_name
          FROM jef_circuit_rankings cr
          JOIN jef_players p ON p.id = cr.player_id
          WHERE cr.season_id = ? AND cr.ranking_type = ?

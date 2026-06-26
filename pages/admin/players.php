@@ -52,18 +52,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $showAll = isset($_GET['all']);
 
+$clubSubquery =
+    "(SELECT COALESCE(c.name_short, c.name_long)
+        FROM jef_tournament_players tp
+        JOIN jef_tournaments t ON t.id = tp.tournament_id
+        LEFT JOIN jef_clubs c ON c.idclub = tp.club_id
+       WHERE tp.player_id = p.id AND tp.club_id IS NOT NULL
+       ORDER BY t.date_start DESC, t.sort_order DESC
+       LIMIT 1) AS club_name";
+
 if ($showAll) {
     $players = $db->query(
-        "SELECT id, last_name, first_name, birth_date, fide_id
-         FROM jef_players
-         ORDER BY last_name, first_name"
+        "SELECT p.id, p.last_name, p.first_name, p.birth_date, p.fide_id, p.belgian_id,
+                {$clubSubquery}
+         FROM jef_players p
+         ORDER BY p.last_name, p.first_name"
     )->fetchAll();
 } else {
     $players = $db->query(
-        "SELECT id, last_name, first_name, birth_date, fide_id
-         FROM jef_players
-         WHERE fide_id IS NULL OR fide_id = 0
-         ORDER BY last_name, first_name"
+        "SELECT p.id, p.last_name, p.first_name, p.birth_date, p.fide_id, p.belgian_id,
+                {$clubSubquery}
+         FROM jef_players p
+         WHERE p.fide_id IS NULL OR p.fide_id = 0
+         ORDER BY p.last_name, p.first_name"
     )->fetchAll();
 }
 
