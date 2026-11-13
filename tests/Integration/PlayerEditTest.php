@@ -6,6 +6,7 @@ namespace Tests\Integration;
 
 use Jef\Database;
 use Jef\PlayerEditor;
+use Jef\Ranking\RankingCalculator;
 use PHPUnit\Framework\TestCase;
 
 final class PlayerEditTest extends TestCase
@@ -52,15 +53,30 @@ final class PlayerEditTest extends TestCase
         return (int) self::$db->lastInsertId();
     }
 
-    private function seedTournament(): int
+    private function seedTournament(int $year = 2026): int
     {
-        self::$db->exec("INSERT INTO jef_seasons (year) VALUES (2026)");
+        self::$db->prepare("INSERT INTO jef_seasons (year) VALUES (?)")->execute([$year]);
         $seasonId = (int) self::$db->lastInsertId();
         self::$db->prepare(
             "INSERT INTO jef_tournaments (season_id, name, date_start, round_count, player_count, sort_order)
-             VALUES (?, 'T1', '2026-01-31', 1, 1, 1)"
-        )->execute([$seasonId]);
+             VALUES (?, 'T1', ?, 1, 1, 1)"
+        )->execute([$seasonId, "{$year}-01-31"]);
         return (int) self::$db->lastInsertId();
+    }
+
+    private function seasonOf(int $tournamentId): int
+    {
+        return (int) self::$db->query("SELECT season_id FROM jef_tournaments WHERE id = {$tournamentId}")->fetchColumn();
+    }
+
+    /** @return list<string> sorted ranking types of a player in a season */
+    private function rankingTypes(int $playerId, int $seasonId): array
+    {
+        $rows = self::$db->query(
+            "SELECT ranking_type FROM jef_circuit_rankings WHERE player_id = {$playerId} AND season_id = {$seasonId}"
+        )->fetchAll(\PDO::FETCH_COLUMN);
+        sort($rows);
+        return $rows;
     }
 
     private function seedParticipation(int $tournamentId, int $playerId): int
@@ -206,25 +222,77 @@ final class PlayerEditTest extends TestCase
         $this->assertNull($club);
     }
 
-    public function testBirthDateChangeRecalculatesRankings(): void
+    public function testBirthDateChangeRecalculatesRankingsInEverySeason(): void
     {
-        $id = $this->seedPlayer(birthDate: '2017-01-01'); // U10 in 2026
+        $id = $this->seedPlayer(birthDate: '2017-01-01'); // U10 in 2025 and 2026
+        $t2025 = $this->seedTournament(2025);
+        $t2026 = $this->seedTournament(2026);
+        $this->seedParticipation($t2025, $id);
+        $this->seedParticipation($t2026, $id);
+        $s2025 = $this->seasonOf($t2025);
+        $s2026 = $this->seasonOf($t2026);
+        RankingCalculator::recalculate(self::$db, $s2025);
+        RankingCalculator::recalculate(self::$db, $s2026);
+
+        $this->assertSame(['U10', 'general'], $this->rankingTypes($id, $s2025));
+        $this->assertSame(['U10', 'general'], $this->rankingTypes($id, $s2026));
+
+        $this->assertSame([], $this->edit($id, ['birth_date' => '2014-01-01']));
+
+        $this->assertSame(['U12', 'general'], $this->rankingTypes($id, $s2025));
+        $this->assertSame(['U14', 'general'], $this->rankingTypes($id, $s2026));
+    }
+
+    public function testUnchangedBirthDateDoesNotRecalculateRankings(): void
+    {
+        $id = $this->seedPlayer(birthDate: '2017-01-01');
         $tournamentId = $this->seedTournament();
         $this->seedParticipation($tournamentId, $id);
-        $seasonId = (int) self::$db->query("SELECT season_id FROM jef_tournaments WHERE id = {$tournamentId}")->fetchColumn();
-        \Jef\Ranking\RankingCalculator::recalculate(self::$db, $seasonId);
+        $seasonId = $this->seasonOf($tournamentId);
+        RankingCalculator::recalculate(self::$db, $seasonId);
 
-        $types = function () use ($id): array {
-            $rows = self::$db->query(
-                "SELECT ranking_type FROM jef_circuit_rankings WHERE player_id = {$id}"
-            )->fetchAll(\PDO::FETCH_COLUMN);
-            sort($rows);
-            return $rows;
-        };
-        $this->assertSame(['U10', 'general'], $types());
+        // Sentinel value a recalculation would overwrite.
+        self::$db->exec("UPDATE jef_circuit_rankings SET total_points = 999 WHERE player_id = {$id}");
 
-        $this->assertSame([], $this->edit($id, ['birth_date' => '2014-01-01'])); // U14 in 2026
+        $this->assertSame([], $this->edit($id, ['first_name' => 'Marion', 'birth_date' => '2017-01-01']));
 
-        $this->assertSame(['U14', 'general'], $types());
+        $points = self::$db->query(
+            "SELECT DISTINCT total_points FROM jef_circuit_rankings WHERE player_id = {$id}"
+        )->fetchAll(\PDO::FETCH_COLUMN);
+        $this->assertEquals([999], $points);
+    }
+
+    public function testFindIdentityCollisions(): void
+    {
+        $id = $this->seedPlayer('Dupond', 'Marie', '2017-01-01');
+        $twin = $this->seedPlayer('Dupont', 'Marie', '2017-01-01', fideId: 777);
+        $this->seedPlayer('Dupont', 'Marie', '2016-01-01'); // different birth date
+
+        $this->assertSame([], $this->edit($id, ['last_name' => 'Dupont']));
+
+        $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
+            'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
+        ]);
+        $this->assertSame([['id' => $twin, 'fide_id' => 777]], $collisions);
+    }
+
+    public function testFindIdentityCollisionsMatchesNullBirthDates(): void
+    {
+        $id = $this->seedPlayer('Dupont', 'Marie', null);
+        $twin = $this->seedPlayer('Dupont', 'Marie', null);
+
+        $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
+            'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => null,
+        ]);
+        $this->assertSame([['id' => $twin, 'fide_id' => null]], $collisions);
+    }
+
+    public function testFindIdentityCollisionsExcludesSelf(): void
+    {
+        $id = $this->seedPlayer('Dupont', 'Marie', '2017-01-01');
+
+        $this->assertSame([], PlayerEditor::findIdentityCollisions(self::$db, $id, [
+            'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
+        ]));
     }
 }

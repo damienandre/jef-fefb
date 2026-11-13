@@ -52,6 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $_SESSION['flash_success'] = 'Joueur mis à jour.';
+
+    $collisions = PlayerEditor::findIdentityCollisions($db, $id, $data);
+    if ($collisions !== []) {
+        $ids = implode(', ', array_map(fn ($c) => '#' . $c['id'], $collisions));
+        $warning = "Ce joueur a maintenant les mêmes nom, prénom et date de naissance que le(s) joueur(s) {$ids}. "
+            . 'Lancez « php cli/normalize-players.php » pour les fusionner.';
+
+        $fideIds = array_filter(array_merge([$data['fide_id']], array_column($collisions, 'fide_id')));
+        if ($data['birth_date'] === null && $fideIds === []) {
+            $warning .= ' Attention : sans date de naissance (ni ID FIDE), la fusion automatique ne se fera pas.';
+        }
+        if (count(array_unique($fideIds)) > 1) {
+            $warning .= ' Attention : ces joueurs ont des ID FIDE différents, la fusion automatique ne se fera pas.';
+        }
+        $_SESSION['flash_warning'] = $warning;
+    }
     \Jef\Url::redirect('/admin/player?id=' . $id);
 }
 

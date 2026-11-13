@@ -203,7 +203,38 @@ final class PlayerEditor
         return [];
     }
 
-    private static function duplicateKeyMessage(\PDOException $e): ?string
+    /**
+     * Other players sharing the exact (last_name, first_name, birth_date) of
+     * $data. That triple is the import's match key for players without a FIDE
+     * id, so collisions should be merged (cli/normalize-players.php clusters
+     * on the same triple).
+     *
+     * @param array{last_name:string, first_name:string, birth_date:?string} $data
+     * @return list<array{id:int, fide_id:?int}>
+     */
+    public static function findIdentityCollisions(PDO $db, int $playerId, array $data): array
+    {
+        $stmt = $db->prepare(
+            "SELECT id, fide_id FROM jef_players
+             WHERE id != ? AND last_name = ? AND first_name = ? AND birth_date <=> ?
+             ORDER BY id"
+        );
+        $stmt->execute([$playerId, $data['last_name'], $data['first_name'], $data['birth_date']]);
+
+        return array_map(
+            fn (array $r) => [
+                'id' => (int) $r['id'],
+                'fide_id' => $r['fide_id'] !== null ? (int) $r['fide_id'] : null,
+            ],
+            $stmt->fetchAll()
+        );
+    }
+
+    /**
+     * Map a duplicate-key error on the player ID columns to a user message;
+     * null for any other error.
+     */
+    public static function duplicateKeyMessage(\PDOException $e): ?string
     {
         if (($e->errorInfo[1] ?? null) !== 1062) {
             return null;
