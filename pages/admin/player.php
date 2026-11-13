@@ -41,6 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($errors !== []) {
         $_SESSION['flash_error'] = implode(' ', $errors);
+        // Keep what the admin typed so the form can be corrected, not re-entered.
+        $_SESSION['player_form'] = [
+            'player_id' => $id,
+            'input' => array_intersect_key($_POST, array_flip(
+                ['last_name', 'first_name', 'birth_date', 'fide_id', 'belgian_id', 'clubs']
+            )),
+        ];
         \Jef\Url::redirect('/admin/player?id=' . $id);
     }
 
@@ -58,6 +65,25 @@ $stmt = $db->prepare(
 );
 $stmt->execute([$id]);
 $participations = $stmt->fetchAll();
+
+// Restore the submitted values after a failed save.
+$oldForm = $_SESSION['player_form'] ?? null;
+unset($_SESSION['player_form']);
+if (is_array($oldForm) && ($oldForm['player_id'] ?? null) === $id) {
+    $old = $oldForm['input'];
+    foreach (['last_name', 'first_name', 'birth_date', 'fide_id', 'belgian_id'] as $field) {
+        if (isset($old[$field]) && is_string($old[$field])) {
+            $player[$field] = $old[$field];
+        }
+    }
+    $oldClubs = is_array($old['clubs'] ?? null) ? $old['clubs'] : [];
+    foreach ($participations as &$tp) {
+        if (array_key_exists($tp['tp_id'], $oldClubs) && is_string($oldClubs[$tp['tp_id']])) {
+            $tp['club_id'] = $oldClubs[$tp['tp_id']] === '' ? null : $oldClubs[$tp['tp_id']];
+        }
+    }
+    unset($tp);
+}
 
 $clubs = $db->query(
     "SELECT idclub, COALESCE(name_short, name_long) AS name

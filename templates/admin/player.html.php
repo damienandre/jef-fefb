@@ -21,12 +21,12 @@
 
     <div class="form-group">
         <label for="fide_id">ID FIDE</label>
-        <input type="number" name="fide_id" id="fide_id" value="<?= $player['fide_id'] ? intval($player['fide_id']) : '' ?>" min="1" max="999999999">
+        <input type="number" name="fide_id" id="fide_id" value="<?= htmlspecialchars((string) ($player['fide_id'] ?? '')) ?>" min="1" max="999999999">
     </div>
 
     <div class="form-group">
         <label for="belgian_id">ID belge</label>
-        <input type="number" name="belgian_id" id="belgian_id" value="<?= $player['belgian_id'] ? intval($player['belgian_id']) : '' ?>" min="1" max="999999999">
+        <input type="number" name="belgian_id" id="belgian_id" value="<?= htmlspecialchars((string) ($player['belgian_id'] ?? '')) ?>" min="1" max="999999999">
     </div>
 
     <?php if (!empty($participations)): ?>
@@ -51,7 +51,7 @@
                             <select name="clubs[<?= intval($tp['tp_id']) ?>]">
                                 <option value="">—</option>
                                 <?php foreach ($clubs as $club): ?>
-                                    <option value="<?= intval($club['idclub']) ?>" <?= (int) $tp['club_id'] === (int) $club['idclub'] ? 'selected' : '' ?>>
+                                    <option value="<?= intval($club['idclub']) ?>" <?= $tp['club_id'] !== null && (int) $tp['club_id'] === (int) $club['idclub'] ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($club['name']) ?> (<?= intval($club['idclub']) ?>)
                                     </option>
                                 <?php endforeach; ?>

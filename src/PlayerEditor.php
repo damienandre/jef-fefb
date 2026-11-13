@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jef;
 
 use Jef\Ranking\RankingCalculator;
+use Jef\Trf\TrfParser;
 use PDO;
 
 /**
@@ -29,8 +30,10 @@ final class PlayerEditor
     {
         $errors = [];
 
-        $lastName = trim((string) ($input['last_name'] ?? ''));
-        $firstName = trim((string) ($input['first_name'] ?? ''));
+        // Same normalization as TRF import (UTF-8 NFC) so manually edited names
+        // stay byte-identical to imported ones for the name + birth date match.
+        $lastName = trim(TrfParser::normalizeUtf8((string) ($input['last_name'] ?? '')));
+        $firstName = trim(TrfParser::normalizeUtf8((string) ($input['first_name'] ?? '')));
 
         if ($lastName === '' || $firstName === '') {
             $errors[] = 'Le nom et le prénom sont obligatoires.';
@@ -183,12 +186,36 @@ final class PlayerEditor
             }
 
             $db->commit();
+        } catch (\PDOException $e) {
+            $db->rollBack();
+            // The duplicate checks above are not locked: a concurrent import or
+            // edit can still claim the same ID before our UPDATE runs.
+            $duplicate = self::duplicateKeyMessage($e);
+            if ($duplicate !== null) {
+                return [$duplicate];
+            }
+            throw $e;
         } catch (\Throwable $e) {
             $db->rollBack();
             throw $e;
         }
 
         return [];
+    }
+
+    private static function duplicateKeyMessage(\PDOException $e): ?string
+    {
+        if (($e->errorInfo[1] ?? null) !== 1062) {
+            return null;
+        }
+        $message = $e->getMessage();
+        if (str_contains($message, 'uk_fide_id')) {
+            return 'Cet ID FIDE est déjà attribué à un autre joueur.';
+        }
+        if (str_contains($message, 'uk_belgian_id')) {
+            return 'Cet ID belge est déjà attribué à un autre joueur.';
+        }
+        return null;
     }
 
     /** @param list<string> $errors */

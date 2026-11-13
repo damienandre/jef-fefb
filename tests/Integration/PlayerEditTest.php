@@ -118,6 +118,16 @@ final class PlayerEditTest extends TestCase
         $this->assertSame(54321, (int) $player['belgian_id']);
     }
 
+    public function testNamesAreNormalizedToNfc(): void
+    {
+        $id = $this->seedPlayer();
+
+        // "Hélène" typed with decomposed accents (e + U+0301)
+        $this->assertSame([], $this->edit($id, ['first_name' => "He\u{0301}le\u{0300}ne"]));
+
+        $this->assertSame("H\u{00E9}l\u{00E8}ne", $this->fetchPlayer($id)['first_name']);
+    }
+
     public function testEmptyOptionalFieldsAreCleared(): void
     {
         $id = $this->seedPlayer(fideId: 111, belgianId: 222);
