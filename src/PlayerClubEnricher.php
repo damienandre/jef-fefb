@@ -113,6 +113,14 @@ final class PlayerClubEnricher
 
     /**
      * Upsert the full clubs list into jef_clubs. Returns the number of clubs seen.
+     *
+     * name_short is a curated label: the FRBE export has no short names, so
+     * the ones stored (inherited from the retired clubs API) are kept and never
+     * cleared by a sync. Pages display COALESCE(name_short, name_long), so when
+     * a club with a short name is really renamed, update or clear its
+     * name_short by hand. Clearing it whenever name_long changes would not
+     * work: the export spells 16 of 131 names differently from the old API
+     * (accents, case, spacing), and those short names would be wiped.
      */
     public static function syncClubs(PDO $db, FrbeApi $api): int
     {
@@ -126,7 +134,7 @@ final class PlayerClubEnricher
              VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 name_long = VALUES(name_long),
-                -- The export carries no short names: keep the ones already stored.
+                -- Curated label, never cleared by a sync (see docblock).
                 name_short = COALESCE(VALUES(name_short), name_short),
                 enabled = VALUES(enabled)"
         );
