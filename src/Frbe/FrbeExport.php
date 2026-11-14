@@ -187,7 +187,8 @@ final class FrbeExport implements FrbeApi
             } catch (\PDOException) {
             }
             // Fail fast on a file that is not the expected export.
-            $pdo->query('SELECT IdNumber, FideId, Club, G FROM players LIMIT 1');
+            $pdo->query('SELECT IdNumber, FideId, Club, G, Name, Birthday, Affiliated FROM players LIMIT 1');
+            $pdo->query('SELECT Club, Name FROM clubs LIMIT 1');
             $this->pdo = $pdo;
         } catch (\Throwable $e) {
             $this->error = $e->getMessage();

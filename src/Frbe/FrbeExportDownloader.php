@@ -39,18 +39,25 @@ final class FrbeExportDownloader
     ];
 
     private string $cacheFile;
+    private ?string $refreshError = null;
 
     /**
      * @param string|null $cacheFile where the unpacked players.sqlite is kept;
      *        defaults to var/cache/frbe-players.sqlite in the project root.
      * @param int $maxAgeSeconds reuse the cached copy without any network call
      *        while it is younger than this.
+     * @param int $timeoutSeconds per-request transfer timeout (the web import
+     *        passes a short one; the CLI can afford the default).
+     * @param int $retryAfterSeconds after a failed download, don't try again
+     *        (unless forced) for this long, so an FRBE outage doesn't make every
+     *        import wait for the timeouts.
      */
     public function __construct(
         ?string $cacheFile = null,
         private int $maxAgeSeconds = 4 * 3600,
         private string $baseUrl = self::BASE_URL,
         private int $timeoutSeconds = 30,
+        private int $retryAfterSeconds = 30 * 60,
     ) {
         $this->cacheFile = $cacheFile ?? dirname(__DIR__, 2) . '/var/cache/frbe-players.sqlite';
     }
@@ -58,26 +65,56 @@ final class FrbeExportDownloader
     /**
      * Path of an up-to-date local players.sqlite.
      *
-     * @param bool $force ignore the cache age and download anyway
+     * @param bool $force ignore the cache age and the retry delay, and download anyway
      * @throws \RuntimeException when no export can be obtained and no cached copy exists
      */
     public function fetch(bool $force = false): string
     {
+        $this->refreshError = null;
         $cached = is_file($this->cacheFile) ? filemtime($this->cacheFile) : false;
         if (!$force && $cached !== false && time() - $cached < $this->maxAgeSeconds) {
             return $this->cacheFile;
         }
 
+        $failedAt = is_file($this->failureMarker()) ? filemtime($this->failureMarker()) : false;
+        if (!$force && $failedAt !== false && time() - $failedAt < $this->retryAfterSeconds) {
+            $error = 'FRBE export: last download failed at ' . date('Y-m-d H:i', $failedAt)
+                . '; not retrying yet';
+            if ($cached !== false) {
+                $this->refreshError = $error;
+                return $this->cacheFile;
+            }
+            throw new \RuntimeException($error);
+        }
+
         try {
             $this->download();
         } catch (\RuntimeException $e) {
+            @touch($this->failureMarker());
             if ($cached !== false) {
+                $this->refreshError = $e->getMessage();
                 return $this->cacheFile; // stale beats nothing
             }
             throw $e;
         }
+        @unlink($this->failureMarker());
 
         return $this->cacheFile;
+    }
+
+    /** Touched when a download fails; its mtime drives the retry delay. */
+    private function failureMarker(): string
+    {
+        return $this->cacheFile . '.failed';
+    }
+
+    /**
+     * Why the last {@see fetch()} fell back to a stale cached copy, or null if
+     * it did not (fresh cache, or a successful download).
+     */
+    public function refreshError(): ?string
+    {
+        return $this->refreshError;
     }
 
     /**
@@ -115,19 +152,23 @@ final class FrbeExportDownloader
 
     private function download(): void
     {
+        // First, so the failure marker can be written if the network fails.
+        $dir = dirname($this->cacheFile);
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException("FRBE export: cannot create cache directory {$dir}");
+        }
+
         $index = $this->get($this->baseUrl, self::MAX_INDEX_BYTES);
         $name = self::newestExportName($index);
         if ($name === null) {
             throw new \RuntimeException('FRBE export: directory index lists no players_YYYYMM.zip');
         }
 
-        $dir = dirname($this->cacheFile);
-        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
-            throw new \RuntimeException("FRBE export: cannot create cache directory {$dir}");
-        }
-
-        $zipFile = $this->cacheFile . '.zip.part';
-        $sqliteFile = $this->cacheFile . '.part';
+        // Unique temp names: two concurrent refreshes (an admin import and the
+        // CLI) must not write into, or unlink, each other's partial files.
+        $tmp = $this->cacheFile . '.' . bin2hex(random_bytes(6));
+        $zipFile = $tmp . '.zip.part';
+        $sqliteFile = $tmp . '.part';
         try {
             file_put_contents($zipFile, $this->get($this->baseUrl . $name, self::MAX_ZIP_BYTES));
             $this->extract($zipFile, $sqliteFile);
@@ -191,7 +232,7 @@ final class FrbeExportDownloader
         curl_setopt_array($ch, [
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_TIMEOUT => $this->timeoutSeconds,
-            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => min(10, $this->timeoutSeconds),
             CURLOPT_WRITEFUNCTION => static function ($ch, string $chunk) use (&$body, &$tooLarge, $maxBytes): int {
                 if (strlen($body) + strlen($chunk) > $maxBytes) {
                     $tooLarge = true;

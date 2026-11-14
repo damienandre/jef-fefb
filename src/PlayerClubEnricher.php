@@ -219,7 +219,7 @@ final class PlayerClubEnricher
             }
 
             // Prefer the member record keyed by Belgian id; fall back to the
-            // FIDE-keyed endpoint when the Belgian id is unknown or 404s.
+            // FIDE-keyed lookup when the Belgian id is unknown or not found.
             $member = null;
             if ($belId !== null) {
                 if (!array_key_exists($belId, $memberCache)) {

@@ -6,6 +6,7 @@ namespace Jef;
 
 use Jef\Frbe\FrbeApi;
 use Jef\Frbe\FrbeExport;
+use Jef\Frbe\FrbeExportDownloader;
 use Jef\Ranking\RankingCalculator;
 use Jef\Trf\TrfParser;
 use PDO;
@@ -132,7 +133,9 @@ final class ImportService
             try {
                 PlayerClubEnricher::enrichTournament(
                     $db,
-                    $enrichmentApi ?? FrbeExport::live(),
+                    // Short timeouts: this runs inside the admin's request, and
+                    // the import has already committed.
+                    $enrichmentApi ?? FrbeExport::live(new FrbeExportDownloader(timeoutSeconds: 10)),
                     $tournamentId
                 );
             } catch (\Throwable) {

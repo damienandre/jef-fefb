@@ -6,6 +6,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Jef\Database;
 use Jef\Frbe\FrbeExport;
+use Jef\Frbe\FrbeExportDownloader;
 use Jef\PlayerClubEnricher;
 
 $scriptName = array_shift($argv) ?? 'cli/enrich-players.php';
@@ -23,7 +24,8 @@ foreach ($argv as $arg) {
 
 $db = Database::get();
 // Always fetch a fresh export: this is the full backfill / safety net.
-$api = FrbeExport::live(forceRefresh: true);
+$downloader = new FrbeExportDownloader();
+$api = FrbeExport::live($downloader, forceRefresh: true);
 
 echo "Player club & rating enrichment" . ($dryRun ? " [DRY RUN]" : "") . "\n";
 echo str_repeat('=', 60) . "\n";
@@ -34,7 +36,11 @@ $report = PlayerClubEnricher::run($db, $api, $dryRun);
 if ($api->error() !== null) {
     fwrite(STDERR, "\nWarning: the FRBE player export could not be loaded ("
         . $api->error() . "); nothing was enriched.\n");
-} elseif ($report['clubs_loaded'] === 0) {
+} elseif ($downloader->refreshError() !== null) {
+    fwrite(STDERR, "\nWarning: the FRBE player export could not be refreshed ("
+        . $downloader->refreshError() . "); an older cached copy was used.\n");
+}
+if ($api->error() === null && $report['clubs_loaded'] === 0) {
     fwrite(STDERR, "\nWarning: 0 clubs loaded from the FRBE player export; "
         . "enrichment results below are likely incomplete.\n");
 }

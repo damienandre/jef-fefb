@@ -71,6 +71,7 @@ final class FrbeExportDownloaderTest extends TestCase
             $this->assertSame($file, $downloader->fetch());
         } finally {
             @unlink($file);
+            @unlink($file . '.failed');
         }
     }
 
@@ -83,6 +84,7 @@ final class FrbeExportDownloaderTest extends TestCase
             $this->assertSame($file, $downloader->fetch());
         } finally {
             @unlink($file);
+            @unlink($file . '.failed');
         }
     }
 
@@ -91,7 +93,52 @@ final class FrbeExportDownloaderTest extends TestCase
         $file = sys_get_temp_dir() . '/jef-frbe-missing-' . bin2hex(random_bytes(4)) . '.sqlite';
         $downloader = new FrbeExportDownloader($file, 3600, 'http://127.0.0.1:9/', 2);
 
-        $this->expectException(\RuntimeException::class);
-        $downloader->fetch();
+        try {
+            $this->expectException(\RuntimeException::class);
+            $downloader->fetch();
+        } finally {
+            @unlink($file . '.failed');
+        }
+    }
+
+    public function testFailedDownloadIsNotRetriedUntilDelayPasses(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'jef-frbe-');
+        touch($file, time() - 86400);
+        try {
+            $downloader = new FrbeExportDownloader($file, 3600, 'http://127.0.0.1:9/', 2, 1800);
+            $downloader->fetch();
+            $this->assertFileExists($file . '.failed');
+            $this->assertStringContainsString('unreachable', (string) $downloader->refreshError());
+
+            // Within the delay: stale copy, no download attempted.
+            $this->assertSame($file, $downloader->fetch());
+            $this->assertStringContainsString('not retrying yet', (string) $downloader->refreshError());
+
+            // Delay over: it tries again (and fails again).
+            touch($file . '.failed', time() - 3600);
+            $downloader->fetch();
+            $this->assertStringContainsString('unreachable', (string) $downloader->refreshError());
+
+            // Forced: always tries.
+            $downloader->fetch(force: true);
+            $this->assertStringContainsString('unreachable', (string) $downloader->refreshError());
+        } finally {
+            @unlink($file);
+            @unlink($file . '.failed');
+        }
+    }
+
+    public function testRetryDelayWithoutCacheFailsFast(): void
+    {
+        $file = sys_get_temp_dir() . '/jef-frbe-missing-' . bin2hex(random_bytes(4)) . '.sqlite';
+        touch($file . '.failed');
+        try {
+            $downloader = new FrbeExportDownloader($file, 3600, 'http://127.0.0.1:9/', 2, 1800);
+            $this->expectExceptionMessage('not retrying yet');
+            $downloader->fetch();
+        } finally {
+            @unlink($file . '.failed');
+        }
     }
 }
