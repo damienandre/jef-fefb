@@ -26,14 +26,14 @@
         <tbody>
             <?php foreach ($players as $player): ?>
                 <tr>
-                    <td><?= htmlspecialchars($player['last_name']) ?></td>
+                    <td><a href="<?= $basePath ?>/admin/player?id=<?= intval($player['id']) ?>"><?= htmlspecialchars($player['last_name']) ?></a></td>
                     <td><?= htmlspecialchars($player['first_name']) ?></td>
                     <td><?= $player['birth_date'] ? date('d/m/Y', strtotime($player['birth_date'])) : '—' ?></td>
                     <td><?= !empty($player['club_name']) ? htmlspecialchars($player['club_name']) : '—' ?></td>
                     <td><?= !empty($player['belgian_id']) ? intval($player['belgian_id']) : '—' ?></td>
                     <?php if ($player['fide_id'] && $player['fide_id'] > 0): ?>
                         <td><?= intval($player['fide_id']) ?></td>
-                        <td></td>
+                        <td><a href="<?= $basePath ?>/admin/player?id=<?= intval($player['id']) ?>">Modifier</a></td>
                     <?php else: ?>
                         <td colspan="2">
                             <form method="POST" action="<?= $basePath ?>/admin/players" style="display:flex;gap:0.5rem;align-items:center">

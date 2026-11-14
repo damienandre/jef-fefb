@@ -360,6 +360,11 @@ footer {
     color: #842029;
 }
 
+.alert-warning {
+    background: #fff3cd;
+    color: #664d03;
+}
+
 .login-form {
     max-width: 400px;
     margin: 3rem auto;

@@ -25,6 +25,7 @@ match ($path) {
     '/admin/add-stage' => require __DIR__ . '/../pages/admin/add-stage.php',
     '/admin/tournament' => require __DIR__ . '/../pages/admin/tournament.php',
     '/admin/players'  => require __DIR__ . '/../pages/admin/players.php',
+    '/admin/player'   => require __DIR__ . '/../pages/admin/player.php',
     '/admin/settings' => require __DIR__ . '/../pages/admin/settings.php',
     '/admin/logout'   => require __DIR__ . '/../pages/admin/logout.php',
     default           => require __DIR__ . '/../pages/404.php',
