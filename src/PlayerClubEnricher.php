@@ -8,12 +8,12 @@ use Jef\Frbe\FrbeApi;
 use PDO;
 
 /**
- * Enriches players with Belgian-federation data fetched from the FRBE public API:
+ * Enriches players with Belgian-federation data from the FRBE bulk player export:
  *   - jef_players.belgian_id              (resolved once per player from its FIDE id)
  *   - jef_tournament_players.club_id      (the member's club, captured per participation)
  *   - jef_clubs                           (reference table of club id -> name)
  *
- * The API returns *current* values, so club is stored per tournament rather than
+ * The export holds *current* values, so club is stored per tournament rather than
  * once per player. Players without a FIDE id cannot be matched and are left as-is.
  *
  * Used two ways:

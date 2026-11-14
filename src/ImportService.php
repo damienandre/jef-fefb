@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Jef;
 
 use Jef\Frbe\FrbeApi;
-use Jef\Frbe\FrbeApiClient;
+use Jef\Frbe\FrbeExport;
 use Jef\Ranking\RankingCalculator;
 use Jef\Trf\TrfParser;
 use PDO;
@@ -18,7 +18,7 @@ final class ImportService
      * All operations happen within a single transaction.
      *
      * @param FrbeApi|null $enrichmentApi Injectable for tests; defaults to the
-     *                                     live FRBE client in production.
+     *                                     FRBE bulk player export in production.
      * @return array{player_count: int, tournament_name: string}
      * @throws \InvalidArgumentException on parse errors
      * @throws \RuntimeException on database errors
@@ -126,13 +126,13 @@ final class ImportService
 
             $db->commit();
 
-            // Best-effort club/belgian-id enrichment from the FRBE API. Runs
-            // outside the import transaction so a slow or unreachable API never
+            // Best-effort club/belgian-id enrichment from the FRBE player export.
+            // Runs outside the import transaction so a slow or unreachable server never
             // rolls back the import; cli/enrich-players.php is the safety net.
             try {
                 PlayerClubEnricher::enrichTournament(
                     $db,
-                    $enrichmentApi ?? new FrbeApiClient(),
+                    $enrichmentApi ?? FrbeExport::live(),
                     $tournamentId
                 );
             } catch (\Throwable) {
