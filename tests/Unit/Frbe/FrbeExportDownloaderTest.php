@@ -88,6 +88,20 @@ final class FrbeExportDownloaderTest extends TestCase
         }
     }
 
+    public function testTooOldCacheIsNotUsedWhenRefreshFails(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'jef-frbe-');
+        touch($file, time() - 8 * 86400);
+        try {
+            $downloader = new FrbeExportDownloader($file, 3600, 'http://127.0.0.1:9/', 2);
+            $this->expectExceptionMessage('too old to use');
+            $downloader->fetch();
+        } finally {
+            @unlink($file);
+            @unlink($file . '.failed');
+        }
+    }
+
     public function testThrowsWithoutCacheWhenUnreachable(): void
     {
         $file = sys_get_temp_dir() . '/jef-frbe-missing-' . bin2hex(random_bytes(4)) . '.sqlite';

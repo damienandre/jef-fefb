@@ -156,7 +156,7 @@ final class FrbeExport implements FrbeApi
         return [
             'idnumber' => (int) $row['IdNumber'],
             'idfide' => (int) ($row['FideId'] ?? 0),
-            'idclub' => (int) ($row['Club'] ?? 0),
+            'idclub' => self::currentClub($row),
             'first_name' => $parts[1] ?? '',
             'last_name' => $parts[0],
             // Birthday is year-only since the migration; tolerate full dates.
@@ -164,6 +164,21 @@ final class FrbeExport implements FrbeApi
             'affiliated' => (int) ($row['Affiliated'] ?? 0) === 1,
             'provisional' => (int) ($row['G'] ?? 0) === 1,
         ];
+    }
+
+    /**
+     * The member's club, or 0 when they have no current one. Lapsed members
+     * keep their last club in the export (often a club that no longer exists),
+     * so only an affiliated member's club counts — plus a provisional (G)
+     * licence's, which is how unaffiliated youngsters are attached to a club.
+     *
+     * @param array<string, mixed> $row
+     */
+    private static function currentClub(array $row): int
+    {
+        $current = (int) ($row['Affiliated'] ?? 0) === 1 || (int) ($row['G'] ?? 0) === 1;
+
+        return $current ? max(0, (int) ($row['Club'] ?? 0)) : 0;
     }
 
     private function db(): ?PDO

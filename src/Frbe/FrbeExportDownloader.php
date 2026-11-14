@@ -51,6 +51,9 @@ final class FrbeExportDownloader
      * @param int $retryAfterSeconds after a failed download, don't try again
      *        (unless forced) for this long, so an FRBE outage doesn't make every
      *        import wait for the timeouts.
+     * @param int $maxStaleSeconds when a refresh fails, fall back to the cached
+     *        copy only if it is younger than this; past that, fail rather than
+     *        keep enriching from data nobody notices is outdated.
      */
     public function __construct(
         ?string $cacheFile = null,
@@ -58,6 +61,7 @@ final class FrbeExportDownloader
         private string $baseUrl = self::BASE_URL,
         private int $timeoutSeconds = 30,
         private int $retryAfterSeconds = 30 * 60,
+        private int $maxStaleSeconds = 7 * 86400,
     ) {
         $this->cacheFile = $cacheFile ?? dirname(__DIR__, 2) . '/var/cache/frbe-players.sqlite';
     }
@@ -66,7 +70,8 @@ final class FrbeExportDownloader
      * Path of an up-to-date local players.sqlite.
      *
      * @param bool $force ignore the cache age and the retry delay, and download anyway
-     * @throws \RuntimeException when no export can be obtained and no cached copy exists
+     * @throws \RuntimeException when no export can be obtained and no cached
+     *         copy younger than $maxStaleSeconds exists
      */
     public function fetch(bool $force = false): string
     {
@@ -80,26 +85,38 @@ final class FrbeExportDownloader
         if (!$force && $failedAt !== false && time() - $failedAt < $this->retryAfterSeconds) {
             $error = 'FRBE export: last download failed at ' . date('Y-m-d H:i', $failedAt)
                 . '; not retrying yet';
-            if ($cached !== false) {
-                $this->refreshError = $error;
-                return $this->cacheFile;
-            }
-            throw new \RuntimeException($error);
+            return $this->fallBack($cached, $error);
         }
 
         try {
             $this->download();
         } catch (\RuntimeException $e) {
             @touch($this->failureMarker());
-            if ($cached !== false) {
-                $this->refreshError = $e->getMessage();
-                return $this->cacheFile; // stale beats nothing
-            }
-            throw $e;
+            return $this->fallBack($cached, $e->getMessage());
         }
         @unlink($this->failureMarker());
 
         return $this->cacheFile;
+    }
+
+    /**
+     * The cached copy when a refresh is not possible, if it is not too old.
+     *
+     * @param int|false $cached mtime of the cached copy
+     * @throws \RuntimeException when there is no usable cached copy
+     */
+    private function fallBack(int|false $cached, string $error): string
+    {
+        if ($cached === false) {
+            throw new \RuntimeException($error);
+        }
+        $ageDays = intdiv(time() - $cached, 86400);
+        if (time() - $cached >= $this->maxStaleSeconds) {
+            throw new \RuntimeException("{$error} (cached copy is {$ageDays} days old, too old to use)");
+        }
+        $this->refreshError = $error;
+
+        return $this->cacheFile; // stale beats nothing
     }
 
     /** Touched when a download fails; its mtime drives the retry delay. */

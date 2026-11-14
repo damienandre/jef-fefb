@@ -28,7 +28,8 @@ final class FrbeExportTest extends TestCase
             (-29740, 'Provisoire, Paul', '2014', 726, 0, NULL, 1, 548034045),
             (29740, 'Michiels, Senne', '2011', 108, 1, NULL, 0, 0),
             (-500, 'Twin, Tom', '2013', 108, 0, NULL, 1, 777),
-            (501, 'Twin, Tom', '2013', 109, 1, NULL, 0, 777)");
+            (501, 'Twin, Tom', '2013', 109, 1, NULL, 0, 777),
+            (602, 'Lapsed, Lea', '2010', 412, 0, NULL, 0, 888)");
     }
 
     protected function tearDown(): void
@@ -80,6 +81,18 @@ final class FrbeExportTest extends TestCase
         // Its magnitude is a different, real player's id.
         $this->assertSame('Michiels', $export->getMember(29740)['last_name']);
         $this->assertNull($export->getMember(-29740));
+    }
+
+    public function testLapsedMemberHasNoCurrentClub(): void
+    {
+        $export = FrbeExport::fromFile($this->file);
+
+        // Still a known player with a stable id...
+        $this->assertSame(602, $export->fideIdToBelgianId(888));
+        // ...but the club the export remembers is not a current one.
+        $this->assertSame(0, $export->getMember(602)['idclub']);
+        $this->assertSame(0, $export->getFideMember(888)['idclub']);
+        $this->assertFalse($export->getMember(602)['affiliated']);
     }
 
     public function testDefinitiveRecordWinsOverProvisionalForSameFideId(): void

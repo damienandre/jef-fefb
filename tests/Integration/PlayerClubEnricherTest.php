@@ -63,6 +63,23 @@ final class PlayerClubEnricherTest extends TestCase
         $this->assertSame('AA', self::$db->query("SELECT name_short FROM jef_clubs WHERE idclub = 101")->fetchColumn());
     }
 
+    public function testSyncClubsKeepsShortNameWhenSourceHasNone(): void
+    {
+        PlayerClubEnricher::syncClubs(self::$db, new FrbeApiStub(clubs: [
+            ['idclub' => 101, 'name_long' => 'Club Long A', 'name_short' => 'A', 'enabled' => true],
+        ]));
+
+        // The FRBE export has no short names: a re-sync must not erase them.
+        PlayerClubEnricher::syncClubs(self::$db, new FrbeApiStub(clubs: [
+            ['idclub' => 101, 'name_long' => 'Club Long A (renamed)', 'name_short' => null, 'enabled' => true],
+        ]));
+
+        $row = self::$db->query("SELECT name_long, name_short FROM jef_clubs WHERE idclub = 101")
+            ->fetch(\PDO::FETCH_ASSOC);
+        $this->assertSame('Club Long A (renamed)', $row['name_long']);
+        $this->assertSame('A', $row['name_short']);
+    }
+
     public function testEnrichTournamentResolvesBelgianIdAndSetsClub(): void
     {
         $tournamentId = $this->seedTournament();

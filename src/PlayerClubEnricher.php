@@ -126,7 +126,8 @@ final class PlayerClubEnricher
              VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 name_long = VALUES(name_long),
-                name_short = VALUES(name_short),
+                -- The export carries no short names: keep the ones already stored.
+                name_short = COALESCE(VALUES(name_short), name_short),
                 enabled = VALUES(enabled)"
         );
 

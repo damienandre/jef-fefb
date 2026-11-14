@@ -130,16 +130,26 @@ final class ImportService
             // Best-effort club/belgian-id enrichment from the FRBE player export.
             // Runs outside the import transaction so a slow or unreachable server never
             // rolls back the import; cli/enrich-players.php is the safety net.
+            $downloader = null;
+            $export = null;
+            if ($enrichmentApi === null) {
+                // Short timeouts: this runs inside the admin's request, and
+                // the import has already committed.
+                $downloader = new FrbeExportDownloader(timeoutSeconds: 10);
+                $export = FrbeExport::live($downloader);
+            }
             try {
-                PlayerClubEnricher::enrichTournament(
-                    $db,
-                    // Short timeouts: this runs inside the admin's request, and
-                    // the import has already committed.
-                    $enrichmentApi ?? FrbeExport::live(new FrbeExportDownloader(timeoutSeconds: 10)),
-                    $tournamentId
-                );
-            } catch (\Throwable) {
-                // ignored — enrichment is non-critical and re-runnable
+                PlayerClubEnricher::enrichTournament($db, $enrichmentApi ?? $export, $tournamentId);
+            } catch (\Throwable $e) {
+                // Non-critical and re-runnable, but leave a trace in the PHP log.
+                error_log('JEF enrichment failed: ' . $e->getMessage());
+            }
+            // Problems the export absorbed without throwing (it was unavailable,
+            // or an older cached copy was used) would otherwise go unnoticed.
+            if ($export?->error() !== null) {
+                error_log('JEF enrichment skipped: ' . $export->error());
+            } elseif ($downloader?->refreshError() !== null) {
+                error_log('JEF enrichment used an older FRBE export: ' . $downloader->refreshError());
             }
 
             $tournamentName = $existingTournament
