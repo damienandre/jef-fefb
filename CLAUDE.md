@@ -46,4 +46,19 @@ Production runs on Infomaniak shared hosting. Nothing is deployed automatically
 all rows from the `jef_*` tables of the database configured in `config.php`,
 which on the server is production.
 
+**Recurring: player club enrichment.** Imports enrich only the tournament just
+imported, and only players currently affiliated to a club (or holding a
+provisional licence) get one. Players who renew late get no club until the
+enrichment is run again, and nothing runs it automatically. So, from the SSH
+console in `jef-app`, after each season's renewals have been processed (around
+November) and whenever clubs look missing:
+
+1. `php cli/enrich-players.php --dry-run` (downloads the FRBE player export,
+   changes nothing, prints what it would do)
+2. `php cli/enrich-players.php`
+
+It sets every tournament participation's club to the player's current club and
+never clears a club when the player has none. Unlike phpunit, it is meant to
+run against production.
+
 <!-- MANUAL ADDITIONS END -->

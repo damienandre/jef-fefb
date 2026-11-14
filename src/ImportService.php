@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Jef;
 
 use Jef\Frbe\FrbeApi;
-use Jef\Frbe\FrbeApiClient;
+use Jef\Frbe\FrbeExport;
+use Jef\Frbe\FrbeExportDownloader;
 use Jef\Ranking\RankingCalculator;
 use Jef\Trf\TrfParser;
 use PDO;
@@ -18,7 +19,7 @@ final class ImportService
      * All operations happen within a single transaction.
      *
      * @param FrbeApi|null $enrichmentApi Injectable for tests; defaults to the
-     *                                     live FRBE client in production.
+     *                                     FRBE bulk player export in production.
      * @return array{player_count: int, tournament_name: string}
      * @throws \InvalidArgumentException on parse errors
      * @throws \RuntimeException on database errors
@@ -126,17 +127,29 @@ final class ImportService
 
             $db->commit();
 
-            // Best-effort club/belgian-id enrichment from the FRBE API. Runs
-            // outside the import transaction so a slow or unreachable API never
+            // Best-effort club/belgian-id enrichment from the FRBE player export.
+            // Runs outside the import transaction so a slow or unreachable server never
             // rolls back the import; cli/enrich-players.php is the safety net.
+            $downloader = null;
+            $export = null;
+            if ($enrichmentApi === null) {
+                // Short timeouts: this runs inside the admin's request, and
+                // the import has already committed.
+                $downloader = new FrbeExportDownloader(timeoutSeconds: 10);
+                $export = FrbeExport::live($downloader);
+            }
             try {
-                PlayerClubEnricher::enrichTournament(
-                    $db,
-                    $enrichmentApi ?? new FrbeApiClient(),
-                    $tournamentId
-                );
-            } catch (\Throwable) {
-                // ignored — enrichment is non-critical and re-runnable
+                PlayerClubEnricher::enrichTournament($db, $enrichmentApi ?? $export, $tournamentId);
+            } catch (\Throwable $e) {
+                // Non-critical and re-runnable, but leave a trace in the PHP log.
+                error_log('JEF enrichment failed: ' . $e->getMessage());
+            }
+            // Problems the export absorbed without throwing (it was unavailable,
+            // or an older cached copy was used) would otherwise go unnoticed.
+            if ($export?->error() !== null) {
+                error_log('JEF enrichment skipped: ' . $export->error());
+            } elseif ($downloader?->refreshError() !== null) {
+                error_log('JEF enrichment used an older FRBE export: ' . $downloader->refreshError());
             }
 
             $tournamentName = $existingTournament

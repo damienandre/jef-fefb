@@ -8,12 +8,12 @@ use Jef\Frbe\FrbeApi;
 use PDO;
 
 /**
- * Enriches players with Belgian-federation data fetched from the FRBE public API:
+ * Enriches players with Belgian-federation data from the FRBE bulk player export:
  *   - jef_players.belgian_id              (resolved once per player from its FIDE id)
  *   - jef_tournament_players.club_id      (the member's club, captured per participation)
  *   - jef_clubs                           (reference table of club id -> name)
  *
- * The API returns *current* values, so club is stored per tournament rather than
+ * The export holds *current* values, so club is stored per tournament rather than
  * once per player. Players without a FIDE id cannot be matched and are left as-is.
  *
  * Used two ways:
@@ -113,6 +113,14 @@ final class PlayerClubEnricher
 
     /**
      * Upsert the full clubs list into jef_clubs. Returns the number of clubs seen.
+     *
+     * name_short is a curated label: the FRBE export has no short names, so
+     * the ones stored (inherited from the retired clubs API) are kept and never
+     * cleared by a sync. Pages display COALESCE(name_short, name_long), so when
+     * a club with a short name is really renamed, update or clear its
+     * name_short by hand. Clearing it whenever name_long changes would not
+     * work: the export spells 16 of 131 names differently from the old API
+     * (accents, case, spacing), and those short names would be wiped.
      */
     public static function syncClubs(PDO $db, FrbeApi $api): int
     {
@@ -126,7 +134,8 @@ final class PlayerClubEnricher
              VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 name_long = VALUES(name_long),
-                name_short = VALUES(name_short),
+                -- Curated label, never cleared by a sync (see docblock).
+                name_short = COALESCE(VALUES(name_short), name_short),
                 enabled = VALUES(enabled)"
         );
 
@@ -219,7 +228,7 @@ final class PlayerClubEnricher
             }
 
             // Prefer the member record keyed by Belgian id; fall back to the
-            // FIDE-keyed endpoint when the Belgian id is unknown or 404s.
+            // FIDE-keyed lookup when the Belgian id is unknown or not found.
             $member = null;
             if ($belId !== null) {
                 if (!array_key_exists($belId, $memberCache)) {
