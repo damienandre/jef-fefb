@@ -273,7 +273,7 @@ final class PlayerEditTest extends TestCase
         $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
         ]);
-        $this->assertSame([['id' => $twin, 'fide_id' => 777]], $collisions);
+        $this->assertSame([['id' => $twin, 'fide_id' => 777, 'shared_tournaments' => 0]], $collisions);
     }
 
     public function testFindIdentityCollisionsMatchesNullBirthDates(): void
@@ -284,7 +284,7 @@ final class PlayerEditTest extends TestCase
         $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => null,
         ]);
-        $this->assertSame([['id' => $twin, 'fide_id' => null]], $collisions);
+        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 0]], $collisions);
     }
 
     public function testFindIdentityCollisionsExcludesSelf(): void
@@ -294,5 +294,22 @@ final class PlayerEditTest extends TestCase
         $this->assertSame([], PlayerEditor::findIdentityCollisions(self::$db, $id, [
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
         ]));
+    }
+
+    public function testFindIdentityCollisionsCountsSharedTournaments(): void
+    {
+        $id = $this->seedPlayer('Dupont', 'Marie', '2017-01-01');
+        $twin = $this->seedPlayer('Dupont', 'Marie', '2017-01-01');
+        $t2025 = $this->seedTournament(2025);
+        $t2026 = $this->seedTournament(2026);
+        $this->seedParticipation($t2025, $id);
+        $this->seedParticipation($t2026, $id);
+        $this->seedParticipation($t2026, $twin);
+
+        $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
+            'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
+        ]);
+
+        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 1]], $collisions);
     }
 }

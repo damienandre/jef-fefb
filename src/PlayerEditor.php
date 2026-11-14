@@ -210,24 +210,75 @@ final class PlayerEditor
      * on the same triple).
      *
      * @param array{last_name:string, first_name:string, birth_date:?string} $data
-     * @return list<array{id:int, fide_id:?int}>
+     * shared_tournaments counts tournaments both players took part in: one
+     * person cannot hold two places in a tournament, so a non-zero count means
+     * two different people (and a merge would drop one of the results).
+     *
+     * @return list<array{id:int, fide_id:?int, shared_tournaments:int}>
      */
     public static function findIdentityCollisions(PDO $db, int $playerId, array $data): array
     {
         $stmt = $db->prepare(
-            "SELECT id, fide_id FROM jef_players
-             WHERE id != ? AND last_name = ? AND first_name = ? AND birth_date <=> ?
-             ORDER BY id"
+            "SELECT p.id, p.fide_id,
+                    (SELECT COUNT(*)
+                       FROM jef_tournament_players other
+                       JOIN jef_tournament_players self
+                         ON self.tournament_id = other.tournament_id AND self.player_id = ?
+                      WHERE other.player_id = p.id) AS shared_tournaments
+             FROM jef_players p
+             WHERE p.id != ? AND p.last_name = ? AND p.first_name = ? AND p.birth_date <=> ?
+             ORDER BY p.id"
         );
-        $stmt->execute([$playerId, $data['last_name'], $data['first_name'], $data['birth_date']]);
+        $stmt->execute([$playerId, $playerId, $data['last_name'], $data['first_name'], $data['birth_date']]);
 
         return array_map(
             fn (array $r) => [
                 'id' => (int) $r['id'],
                 'fide_id' => $r['fide_id'] !== null ? (int) $r['fide_id'] : null,
+                'shared_tournaments' => (int) $r['shared_tournaments'],
             ],
             $stmt->fetchAll()
         );
+    }
+
+    /**
+     * Admin warning for players colliding with the edited one, or null.
+     *
+     * @param array{fide_id:?int, birth_date:?string} $data
+     * @param list<array{id:int, fide_id:?int, shared_tournaments:int}> $collisions
+     */
+    public static function collisionWarning(array $data, array $collisions): ?string
+    {
+        if ($collisions === []) {
+            return null;
+        }
+
+        $formatIds = fn (array $rows) => implode(', ', array_map(fn ($c) => '#' . $c['id'], $rows));
+        $warning = 'Ce joueur a maintenant les mêmes nom, prénom et date de naissance que le(s) joueur(s) '
+            . $formatIds($collisions) . '.';
+
+        $sharing = array_values(array_filter($collisions, fn ($c) => $c['shared_tournaments'] > 0));
+        if ($sharing !== []) {
+            return $warning . ' Le(s) joueur(s) ' . $formatIds($sharing)
+                . ' ont joué au(x) même(s) tournoi(s) que ce joueur : il s\'agit probablement de personnes différentes.'
+                . ' Ne fusionnez pas ; corrigez plutôt la modification.';
+        }
+
+        $rows = [['fide_id' => $data['fide_id'], 'birth_date' => $data['birth_date']]];
+        foreach ($collisions as $c) {
+            $rows[] = ['fide_id' => $c['fide_id'], 'birth_date' => $data['birth_date']];
+        }
+
+        return match (PlayerNormalizer::mergeSkipRule($rows)) {
+            PlayerNormalizer::SKIP_MULTIPLE_FIDE => $warning
+                . ' Ces joueurs ont des ID FIDE différents : la fusion automatique ne se fera pas, vérifiez manuellement.',
+            PlayerNormalizer::SKIP_NO_DOB_NO_FIDE => $warning
+                . ' Sans date de naissance ni ID FIDE, la fusion automatique ne se fera pas, vérifiez manuellement.',
+            default => $warning
+                . ' S\'il s\'agit de la même personne, lancez d\'abord « php cli/normalize-players.php --dry-run »'
+                . ' pour vérifier, puis sans --dry-run pour fusionner.'
+                . ' Attention : la commande fusionne tous les doublons de la base, pas seulement ces joueurs.',
+        };
     }
 
     /**

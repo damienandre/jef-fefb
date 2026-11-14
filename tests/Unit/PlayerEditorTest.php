@@ -49,4 +49,58 @@ final class PlayerEditorTest extends TestCase
     {
         $this->assertSame($expected, PlayerEditor::duplicateKeyMessage($e));
     }
+
+    public function testNoCollisionNoWarning(): void
+    {
+        $this->assertNull(PlayerEditor::collisionWarning(['fide_id' => null, 'birth_date' => '2017-01-01'], []));
+    }
+
+    public function testCollisionWarningRecommendsDryRun(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => 123, 'birth_date' => '2017-01-01'],
+            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0]]
+        );
+
+        $this->assertStringContainsString('#7', $warning);
+        $this->assertStringContainsString('php cli/normalize-players.php --dry-run', $warning);
+        $this->assertStringContainsString('tous les doublons', $warning);
+    }
+
+    public function testCollisionWarningSharedTournamentAdvisesAgainstMerge(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => null, 'birth_date' => '2017-01-01'],
+            [
+                ['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0],
+                ['id' => 8, 'fide_id' => null, 'shared_tournaments' => 2],
+            ]
+        );
+
+        $this->assertStringContainsString('Le(s) joueur(s) #8 ont joué', $warning);
+        $this->assertStringContainsString('Ne fusionnez pas', $warning);
+        $this->assertStringNotContainsString('normalize-players', $warning);
+    }
+
+    public function testCollisionWarningMultipleFideIds(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => 123, 'birth_date' => '2017-01-01'],
+            [['id' => 7, 'fide_id' => 456, 'shared_tournaments' => 0]]
+        );
+
+        $this->assertStringContainsString('ID FIDE différents', $warning);
+        $this->assertStringNotContainsString('normalize-players', $warning);
+    }
+
+    public function testCollisionWarningNoBirthDateNoFide(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => null, 'birth_date' => null],
+            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0]]
+        );
+
+        $this->assertStringContainsString('Sans date de naissance ni ID FIDE', $warning);
+        $this->assertStringNotContainsString('normalize-players', $warning);
+    }
 }

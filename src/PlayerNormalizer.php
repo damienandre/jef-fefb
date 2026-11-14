@@ -25,6 +25,9 @@ final class PlayerNormalizer
     public const EVIDENCE_FIDE = 'fide';
     public const EVIDENCE_NAME_DOB = 'name+dob';
 
+    public const SKIP_MULTIPLE_FIDE = 'multiple_fide';
+    public const SKIP_NO_DOB_NO_FIDE = 'no_dob_no_fide';
+
     /**
      * @return array{
      *     renamed: array<int, array{id:int, before_last:string, before_first:string, after_last:string, after_first:string}>,
@@ -147,11 +150,9 @@ final class PlayerNormalizer
                 continue;
             }
 
-            // UNIQUE(fide_id) means at most one row per cluster has any given
-            // FIDE id; multiple rows with non-null FIDE → distinct values →
-            // plausibly different people, needs human review.
             $withFide = array_values(array_filter($rows, fn($r) => $r['fide_id'] !== null));
-            if (count($withFide) > 1) {
+            $skipRule = self::mergeSkipRule($rows);
+            if ($skipRule === self::SKIP_MULTIPLE_FIDE) {
                 $skipped[] = self::skipEntry(
                     $rows,
                     'multiple distinct FIDE ids: '
@@ -159,10 +160,7 @@ final class PlayerNormalizer
                 );
                 continue;
             }
-
-            // Name-only match (no FIDE, no DOB) is too weak — could be two real
-            // distinct people. Surface for human decision instead of merging.
-            if (empty($withFide) && ($rows[0]['birth_date'] ?? null) === null) {
+            if ($skipRule === self::SKIP_NO_DOB_NO_FIDE) {
                 $skipped[] = self::skipEntry(
                     $rows,
                     'ambiguous: NULL birth_date and no FIDE id on any row'
@@ -235,6 +233,32 @@ final class PlayerNormalizer
         }
 
         return [$merged, $skipped, array_keys($touchedSeasons)];
+    }
+
+    /**
+     * Decide whether a cluster of players sharing (last_name, first_name,
+     * birth_date) would be skipped by the automatic merge.
+     *
+     * @param array<int, array{fide_id:mixed, birth_date:?string}> $rows
+     * @return self::SKIP_*|null null when the cluster would be merged
+     */
+    public static function mergeSkipRule(array $rows): ?string
+    {
+        // UNIQUE(fide_id) means at most one row per cluster has any given
+        // FIDE id; multiple rows with non-null FIDE → distinct values →
+        // plausibly different people, needs human review.
+        $withFide = array_filter($rows, fn($r) => $r['fide_id'] !== null);
+        if (count($withFide) > 1) {
+            return self::SKIP_MULTIPLE_FIDE;
+        }
+
+        // Name-only match (no FIDE, no DOB) is too weak — could be two real
+        // distinct people. Surface for human decision instead of merging.
+        if ($withFide === [] && ($rows[0]['birth_date'] ?? null) === null) {
+            return self::SKIP_NO_DOB_NO_FIDE;
+        }
+
+        return null;
     }
 
     /**
