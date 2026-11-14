@@ -59,7 +59,7 @@ final class PlayerEditorTest extends TestCase
     {
         $warning = PlayerEditor::collisionWarning(
             ['fide_id' => 123, 'birth_date' => '2017-01-01'],
-            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0]]
+            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => true]]
         );
 
         $this->assertStringContainsString('#7', $warning);
@@ -72,8 +72,8 @@ final class PlayerEditorTest extends TestCase
         $warning = PlayerEditor::collisionWarning(
             ['fide_id' => null, 'birth_date' => '2017-01-01'],
             [
-                ['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0],
-                ['id' => 8, 'fide_id' => null, 'shared_tournaments' => 2],
+                ['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => true],
+                ['id' => 8, 'fide_id' => null, 'shared_tournaments' => 2, 'exact' => true],
             ]
         );
 
@@ -86,7 +86,7 @@ final class PlayerEditorTest extends TestCase
     {
         $warning = PlayerEditor::collisionWarning(
             ['fide_id' => 123, 'birth_date' => '2017-01-01'],
-            [['id' => 7, 'fide_id' => 456, 'shared_tournaments' => 0]]
+            [['id' => 7, 'fide_id' => 456, 'shared_tournaments' => 0, 'exact' => true]]
         );
 
         $this->assertStringContainsString('ID FIDE différents', $warning);
@@ -97,10 +97,36 @@ final class PlayerEditorTest extends TestCase
     {
         $warning = PlayerEditor::collisionWarning(
             ['fide_id' => null, 'birth_date' => null],
-            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0]]
+            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => true]]
         );
 
         $this->assertStringContainsString('Sans date de naissance ni ID FIDE', $warning);
+        $this->assertStringNotContainsString('normalize-players', $warning);
+    }
+
+    public function testCollisionWarningCaseOrAccentOnlyDifference(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => null, 'birth_date' => '2017-01-01'],
+            [['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => false]]
+        );
+
+        $this->assertStringContainsString('#7 uniquement par la casse ou les accents', $warning);
+        $this->assertStringNotContainsString('normalize-players', $warning);
+    }
+
+    public function testCollisionWarningMixedExactAndInexact(): void
+    {
+        $warning = PlayerEditor::collisionWarning(
+            ['fide_id' => null, 'birth_date' => '2017-01-01'],
+            [
+                ['id' => 7, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => true],
+                ['id' => 8, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => false],
+            ]
+        );
+
+        $this->assertStringContainsString('#7, #8.', $warning);
+        $this->assertStringContainsString('joueur(s) #8 uniquement', $warning);
         $this->assertStringNotContainsString('normalize-players', $warning);
     }
 }

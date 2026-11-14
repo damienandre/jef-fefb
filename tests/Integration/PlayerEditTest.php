@@ -273,7 +273,7 @@ final class PlayerEditTest extends TestCase
         $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
         ]);
-        $this->assertSame([['id' => $twin, 'fide_id' => 777, 'shared_tournaments' => 0]], $collisions);
+        $this->assertSame([['id' => $twin, 'fide_id' => 777, 'shared_tournaments' => 0, 'exact' => true]], $collisions);
     }
 
     public function testFindIdentityCollisionsMatchesNullBirthDates(): void
@@ -284,7 +284,7 @@ final class PlayerEditTest extends TestCase
         $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => null,
         ]);
-        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 0]], $collisions);
+        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => true]], $collisions);
     }
 
     public function testFindIdentityCollisionsExcludesSelf(): void
@@ -310,6 +310,18 @@ final class PlayerEditTest extends TestCase
             'last_name' => 'Dupont', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
         ]);
 
-        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 1]], $collisions);
+        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 1, 'exact' => true]], $collisions);
+    }
+
+    public function testFindIdentityCollisionsFlagsCaseOnlyDifference(): void
+    {
+        $id = $this->seedPlayer('Dupond', 'Marie', '2017-01-01');
+        $twin = $this->seedPlayer('Dupont', 'Marie', '2017-01-01');
+
+        $collisions = PlayerEditor::findIdentityCollisions(self::$db, $id, [
+            'last_name' => 'DUPONT', 'first_name' => 'Marie', 'birth_date' => '2017-01-01',
+        ]);
+
+        $this->assertSame([['id' => $twin, 'fide_id' => null, 'shared_tournaments' => 0, 'exact' => false]], $collisions);
     }
 }

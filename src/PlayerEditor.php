@@ -214,7 +214,11 @@ final class PlayerEditor
      * person cannot hold two places in a tournament, so a non-zero count means
      * two different people (and a merge would drop one of the results).
      *
-     * @return list<array{id:int, fide_id:?int, shared_tournaments:int}>
+     * Matching uses the column collation (case/accent-insensitive), like the
+     * import. exact tells whether the names are also byte-identical, which is
+     * what cli/normalize-players.php requires to merge.
+     *
+     * @return list<array{id:int, fide_id:?int, shared_tournaments:int, exact:bool}>
      */
     public static function findIdentityCollisions(PDO $db, int $playerId, array $data): array
     {
@@ -224,18 +228,24 @@ final class PlayerEditor
                        FROM jef_tournament_players other
                        JOIN jef_tournament_players self
                          ON self.tournament_id = other.tournament_id AND self.player_id = ?
-                      WHERE other.player_id = p.id) AS shared_tournaments
+                      WHERE other.player_id = p.id) AS shared_tournaments,
+                    (p.last_name COLLATE utf8mb4_bin = ? AND p.first_name COLLATE utf8mb4_bin = ?) AS exact_match
              FROM jef_players p
              WHERE p.id != ? AND p.last_name = ? AND p.first_name = ? AND p.birth_date <=> ?
              ORDER BY p.id"
         );
-        $stmt->execute([$playerId, $playerId, $data['last_name'], $data['first_name'], $data['birth_date']]);
+        $stmt->execute([
+            $playerId,
+            $data['last_name'], $data['first_name'],
+            $playerId, $data['last_name'], $data['first_name'], $data['birth_date'],
+        ]);
 
         return array_map(
             fn (array $r) => [
                 'id' => (int) $r['id'],
                 'fide_id' => $r['fide_id'] !== null ? (int) $r['fide_id'] : null,
                 'shared_tournaments' => (int) $r['shared_tournaments'],
+                'exact' => (bool) $r['exact_match'],
             ],
             $stmt->fetchAll()
         );
@@ -245,7 +255,7 @@ final class PlayerEditor
      * Admin warning for players colliding with the edited one, or null.
      *
      * @param array{fide_id:?int, birth_date:?string} $data
-     * @param list<array{id:int, fide_id:?int, shared_tournaments:int}> $collisions
+     * @param list<array{id:int, fide_id:?int, shared_tournaments:int, exact:bool}> $collisions
      */
     public static function collisionWarning(array $data, array $collisions): ?string
     {
@@ -262,6 +272,15 @@ final class PlayerEditor
             return $warning . ' Le(s) joueur(s) ' . $formatIds($sharing)
                 . ' ont joué au(x) même(s) tournoi(s) que ce joueur : il s\'agit probablement de personnes différentes.'
                 . ' Ne fusionnez pas ; corrigez plutôt la modification.';
+        }
+
+        // normalize-players clusters on byte-identical names: a case/accent-only
+        // difference would never be merged, so don't recommend it.
+        $inexact = array_values(array_filter($collisions, fn ($c) => !$c['exact']));
+        if ($inexact !== []) {
+            return $warning . ' L\'orthographe diffère de celle du/des joueur(s) ' . $formatIds($inexact)
+                . ' uniquement par la casse ou les accents : la fusion automatique ne les regroupera pas.'
+                . ' Rendez l\'orthographe identique pour pouvoir fusionner, ou corrigez-la.';
         }
 
         $rows = [['fide_id' => $data['fide_id'], 'birth_date' => $data['birth_date']]];
